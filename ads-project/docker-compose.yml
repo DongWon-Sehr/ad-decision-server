@@ -1,0 +1,48 @@
+version: "2"
+
+services:
+
+    ### Apache-PHP Server Container ##################################
+    web:
+        container_name: buzzvil-ads
+        hostname: hostname-ads
+        build:
+            context: ./apache2
+            dockerfile: Dockerfile
+        privileged: true
+        ports:
+            - "8080:80"
+        volumes:
+            - ./workspace:/pub/development
+            - ./logs/apache2:/var/log/apache2
+            - ./logs/supervisor:/var/log/supervisor
+        links:
+            - mysql
+            - mysql:database
+            - redis
+
+    ### MySQL Container #########################################
+    mysql:
+        container_name: buzzvil-mysql
+        hostname: hostname-mysql
+        build:
+            context: ./mysql
+            args:
+                MYSQL_ROOT_PASSWORD: root
+                MYSQL_DATABASE: buzzvil
+                MYSQL_USER: buzzvil
+                MYSQL_PASSWORD: buzzvil
+        privileged: true
+        ports:
+            - "3306:3306"
+        command: /usr/sbin/init
+        volumes:
+            - ../resources:/var/lib/mysql-files/
+    
+    ### Redis Container #########################################
+    redis:
+        image: redis:6.2.1-alpine
+        container_name: buzzvil-redis
+        hostname: hostname-redis
+        ports:
+            - 6379:6379
