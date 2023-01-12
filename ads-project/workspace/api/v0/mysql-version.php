@@ -18,7 +18,7 @@ if ($m_mysql->open()) {
     ];
 } else {
     $response = [
-        "errorCode" => 404,
+        "errorCode" => 500,
         "message" => "MySQL Failure!",
     ];
 }

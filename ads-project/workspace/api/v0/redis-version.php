@@ -22,7 +22,7 @@ if ($m_redis->connect() == true) {
     ];
 } else {
     $response = [
-        "errorCode" => 404,
+        "errorCode" => 500,
         "message" => "Redis Failure!",
     ];
 }
