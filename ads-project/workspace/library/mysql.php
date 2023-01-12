@@ -78,8 +78,6 @@ class dw_mysql {
     }
 
     function query($sql, $debug = 0)
-		// you can get columnName like below
-		// $select = mydb_query_full( $sql, $columnName);
     {
         if (strlen($sql) == 0) {
             echo "Fatal error - query is empty !!!";
