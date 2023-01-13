@@ -22,6 +22,11 @@ class dw_mysql {
         ];
     }
 
+    function __destruct()
+    {
+        $this->close();   
+    }
+
     function open()
     {
         // close the connection if the previous connection is not planned
