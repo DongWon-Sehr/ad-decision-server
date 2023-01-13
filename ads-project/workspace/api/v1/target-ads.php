@@ -5,7 +5,7 @@ require_once("library/mysql.php");
 
 /*
 	Caller Example
-	http://localhost:8080/api/v1/ads\
+	http://localhost:8080/api/v1/target-ads\
 		?user_id=1\         mandatory
         &gender=F\	        mandatory
         &country=KR         mandatory
@@ -69,8 +69,10 @@ function get_weighted_random_index($weights) {
     return false;
 }
 
+// main -------------------------------------------------------------------------------------------
+
 // set cache key
-$cache_key = $gender . $country;
+$cache_key = "api-v1-target-ads-" . $gender . $country;
 
 // get ads list from cache
 if ( ! $ignore_cache ) {
