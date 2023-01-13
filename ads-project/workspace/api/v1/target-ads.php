@@ -73,10 +73,10 @@ function get_weighted_random_index($weights) {
 
 // set cache key
 $cache_key = "api-v1-target-ads-" . $gender . $country;
+$m_redis = new dw_redis();
 
 // get ads list from cache
 if ( ! $ignore_cache ) {
-    $m_redis = new dw_redis();
     $ads_list = $m_redis->get($cache_key);
 }
 
