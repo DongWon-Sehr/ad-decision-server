@@ -12,6 +12,10 @@ class dw_redis
     {
     }
 
+    function __destruct()
+    {
+    }
+
     function connect()
     {
         if ($this->handle == true) {
