@@ -82,7 +82,7 @@ class dw_mysql {
         $this->connection = NULL;
     }
 
-    function query($sql, $debug = 0)
+    function query(string $sql, $debug = 0)
     {
         if (strlen($sql) == 0) {
             echo "Fatal error - query is empty !!!";

@@ -48,7 +48,7 @@ class dw_redis
         }
     }
 
-    function get($key)
+    function get(string $key)
     {
         if ($this->connect() == true) {
             // return NULL if key is empty
@@ -69,7 +69,7 @@ class dw_redis
         }
     }
 
-    function set($key, $val, $timeout = 259200) // 86400 * 3 days
+    function set(string $key, $val, int $timeout = 259200) // 86400 * 3 days
     {
         if ($this->connect() == true) {
             // return NULL if key is empty
@@ -89,7 +89,7 @@ class dw_redis
         }
     }
 
-    function expire($key, $timeout = 259200) // 86400 * 3 days
+    function expire(string $key, int $timeout = 259200) // 86400 * 3 days
     {
         if ($this->connect() == true) {
             // return NULL if key is empty
@@ -104,7 +104,7 @@ class dw_redis
         }
     }
 
-    function delete($key)
+    function delete(string $key)
     {
         if ($this->connect() == true) {
             
