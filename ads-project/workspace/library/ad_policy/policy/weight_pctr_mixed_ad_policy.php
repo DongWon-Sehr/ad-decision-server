@@ -22,7 +22,7 @@ class WeightPctrMixedAdPolicy extends AdPolicy
         $_ad_campaign_ids = implode(",", array_column($this->ads_list, "id"));
         $_api_url = $this->ctr_predict_server . "/?user_id={$this->user_id}&ad_campaign_ids={$_ad_campaign_ids}";
         $_api_resp = file_get_contents($_api_url);
-        $_pctr = json_decode($_api_resp["pctr"], true);
+        $_pctr = json_decode($_api_resp, true)["pctr"];
         
         arsort($_pctr);
         $_pctr = array_slice($_pctr, 0, 3, true);
