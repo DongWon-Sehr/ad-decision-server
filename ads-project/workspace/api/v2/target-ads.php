@@ -77,7 +77,7 @@ if ( ! $ignore_cache ) {
 if ( ! $ads_list ) {
     $m_mysql = new dw_mysql();
     $sql = "SELECT * FROM ad_campaigns WHERE target_country = '{$country}' AND target_gender = '{$gender}'";
-    $ads_list = $m_mysql->query($sql, $debug, 1);
+    $ads_list = $m_mysql->query($sql, $debug);
 }
 
 $ads_count = @count($ads_list);
