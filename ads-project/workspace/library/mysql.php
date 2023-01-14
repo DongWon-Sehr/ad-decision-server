@@ -3,12 +3,22 @@
 class dw_mysql {
 
     public $connection = NULL;
-    public $host = 'hostname-mysql'; // service name from docker-compose.yml
+    public $host = 'hostname-mysql-master'; // service name from docker-compose.yml
+    public $port = "3306";
     public $user = 'buzzvil';
     public $password = 'buzzvil';
     public $database = "buzzvil";
-    public $port = "3306";
-    public $options;
+    public $options = NULL;
+    public $master = [
+        "host" => 'hostname-mysql-master',
+        "port" => "3306",
+    ];
+    public $slave = [
+        [
+            "host" => 'hostname-mysql-slave',
+            "port" => "3306",
+        ],
+    ];
     public $previous_connection = [
         "host" => NULL,
         "port" => NULL,
@@ -82,12 +92,42 @@ class dw_mysql {
         $this->connection = NULL;
     }
 
+    function route_query(string $sql, $debug = 0)
+    {
+        if (isset($this->master) && isset($this->slave)) {
+            $sql = trim($sql);
+
+            if (preg_match('/(^SELECT)/i', $sql)) {
+                // set slave
+                $slave_max_cnt = count($this->slave) - 1;
+                $slave_idx = rand(0, $slave_max_cnt);
+                $this->host = $this->slave[$slave_idx]['host'];
+                $this->port = $this->slave[$slave_idx]['port'];
+
+                if ($debug) echo "[{$this->host}:{$this->port}] connect sql = $sql";
+                return true;
+            } else {
+                // set master
+                $this->host = $this->master['host'];
+                $this->port = $this->master['port'];
+
+                if ($debug) echo "[{$this->host}:{$this->port}] connect sql = $sql";
+                return true;
+            }
+        } else {
+            // non master slave data
+            return false;
+        }
+    }
+
     function query(string $sql, $debug = 0)
     {
         if (strlen($sql) == 0) {
             echo "Fatal error - query is empty !!!";
             exit;
         }
+
+        $this->route_query($sql, $debug);
 
         if ($this->open()) {
 
