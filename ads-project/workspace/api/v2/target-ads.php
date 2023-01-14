@@ -1,7 +1,7 @@
 <?php
 
-require_once("library/redis.php");
-require_once("library/mysql.php");
+require_once "library/redis.php";
+require_once "library/mysql.php";
 require_once 'library/ad_policy/core/ad_policy_selector.php';
 
 /*
@@ -77,7 +77,7 @@ if ( ! $ignore_cache ) {
 if ( ! $ads_list ) {
     $m_mysql = new dw_mysql();
     $sql = "SELECT * FROM ad_campaigns WHERE target_country = '{$country}' AND target_gender = '{$gender}'";
-    $ads_list = $m_mysql->query($sql);
+    $ads_list = $m_mysql->query($sql, $debug, 1);
 }
 
 $ads_count = @count($ads_list);
@@ -109,11 +109,6 @@ foreach ($target_ads as $_ad_info) {
     ];
 }
 
-// set cache
-// var_dump($cache_key);
-// echo "<br>\n";
-// var_dump($ads_list);
-// exit;
 $m_redis->set($cache_key, $ads_list);
 
 // response
