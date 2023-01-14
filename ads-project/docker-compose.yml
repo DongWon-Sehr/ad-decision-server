@@ -1,8 +1,8 @@
-version: "2"
+version: "3"
 
 services:
 
-    ### Apache-PHP Server Container ##################################
+    ### Apache-PHP Web Server Container ##################################
     web:
         container_name: buzzvil-ads
         hostname: hostname-ads
@@ -17,27 +17,67 @@ services:
             - ./logs/apache2:/var/log/apache2
             - ./logs/supervisor:/var/log/supervisor
         links:
-            - mysql
-            - mysql:database
+            - mysql-master
+            - mysql-master:database
+            - mysql-slave
+            - mysql-slave:database
             - redis
+        depends_on:
+            - mysql-slave
 
-    ### MySQL Container #########################################
-    mysql:
-        container_name: buzzvil-mysql
-        hostname: hostname-mysql
+    ### MySQL Master Container #########################################
+    mysql-master:
+        container_name: buzzvil-mysql-master
+        hostname: hostname-mysql-master
+        restart: always
         build:
-            context: ./mysql
+            context: ./mysql-master
+            dockerfile: Dockerfile
             args:
                 MYSQL_ROOT_PASSWORD: root
                 MYSQL_DATABASE: buzzvil
                 MYSQL_USER: buzzvil
                 MYSQL_PASSWORD: buzzvil
+        user: root
         privileged: true
+        stdin_open: true
+        tty: true
         ports:
             - "3306:3306"
-        command: /usr/sbin/init
         volumes:
             - ../resources:/var/lib/mysql-files/
+        command: /usr/sbin/init
+        networks:
+            dock_net:
+                ipv4_address: 172.16.0.10
+
+    ### MySQL Slave Container #########################################
+    mysql-slave:
+        container_name: buzzvil-mysql-slave
+        hostname: hostname-mysql-slave
+        restart: always
+        build:
+            context: ./mysql-slave
+            dockerfile: Dockerfile
+            args:
+                MYSQL_ROOT_PASSWORD: root
+                MYSQL_DATABASE: buzzvil
+                MYSQL_USER: buzzvil
+                MYSQL_PASSWORD: buzzvil
+        user: root
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3307:3306"
+        volumes:
+            - ../resources:/var/lib/mysql-files/
+        command: /usr/sbin/init
+        networks:
+            dock_net:
+                ipv4_address: 172.16.0.11
+        depends_on:
+            - mysql-master
     
     ### Redis Container #########################################
     redis:
@@ -46,3 +86,11 @@ services:
         hostname: hostname-redis
         ports:
             - 6379:6379
+
+### Network setting #########################################
+networks: 
+  dock_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.0.0/16
