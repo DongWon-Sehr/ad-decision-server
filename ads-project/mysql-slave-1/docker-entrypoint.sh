@@ -36,10 +36,10 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "create user '$MYSQL_USER'@'%' identified
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "grant all privileges on $MYSQL_DATABASE.* to '$MYSQL_USER'@'%'; FLUSH PRIVILEGES;"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select user, host FROM mysql.user;"
 
-echo "Create slave user"
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "create user 'repl'@'172.16.0.%' identified with mysql_native_password"
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "alter user 'repl'@'172.16.0.%' identified by 'repl'"
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "grant replication slave on *.* to 'repl'@'172.16.0.%'; FLUSH PRIVILEGES;"
+echo "Create slave-1 user"
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "create user 'repl-1'@'172.16.0.%' identified with mysql_native_password"
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "alter user 'repl-1'@'172.16.0.%' identified by 'repl-1'"
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "grant replication slave on *.* to 'repl-1'@'172.16.0.%'; FLUSH PRIVILEGES;"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select user, host FROM mysql.user;"
 
 ## get  status
@@ -60,7 +60,7 @@ if [[ ${master_log_pos} =~ $re ]];then
 fi
 echo "master_log_pos: $master_log_pos"
 
-query="change master to master_host='172.16.0.12', master_user='repl', master_password='repl', master_log_file='${master_log_file}', master_log_pos=${master_log_pos}, master_port=3306"
+query="change master to master_host='172.16.0.12', master_user='repl-1', master_password='repl-1', master_log_file='${master_log_file}', master_log_pos=${master_log_pos}, master_port=3306"
 
 mysql -uroot -proot -S /var/lib/mysql/mysql.sock -e "${query}"
 mysql -uroot -proot -S /var/lib/mysql/mysql.sock -e "start slave"
