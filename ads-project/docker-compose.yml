@@ -16,14 +16,22 @@ services:
             - ./workspace:/pub/development
             - ./logs/apache2:/var/log/apache2
             - ./logs/supervisor:/var/log/supervisor
-        links:
-            - mysql-master
-            - mysql-master:database
-            - mysql-slave
-            - mysql-slave:database
-            - redis
+        networks:
+            dock_net:
+                ipv4_address: 172.16.0.10
         depends_on:
             - mysql-slave
+
+    ### Redis Container #########################################
+    redis:
+        image: redis:6.2.1-alpine
+        container_name: buzzvil-redis
+        hostname: hostname-redis
+        ports:
+            - 6379:6379
+        networks:
+            dock_net:
+                ipv4_address: 172.16.0.11
 
     ### MySQL Master Container #########################################
     mysql-master:
@@ -49,7 +57,7 @@ services:
         command: /usr/sbin/init
         networks:
             dock_net:
-                ipv4_address: 172.16.0.10
+                ipv4_address: 172.16.0.12
 
     ### MySQL Slave Container #########################################
     mysql-slave:
@@ -75,17 +83,9 @@ services:
         command: /usr/sbin/init
         networks:
             dock_net:
-                ipv4_address: 172.16.0.11
+                ipv4_address: 172.16.0.13
         depends_on:
             - mysql-master
-    
-    ### Redis Container #########################################
-    redis:
-        image: redis:6.2.1-alpine
-        container_name: buzzvil-redis
-        hostname: hostname-redis
-        ports:
-            - 6379:6379
 
 ### Network setting #########################################
 networks: 
