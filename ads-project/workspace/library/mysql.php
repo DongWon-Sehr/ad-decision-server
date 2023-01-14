@@ -15,7 +15,11 @@ class dw_mysql {
     ];
     public $slave = [
         [
-            "host" => 'hostname-mysql-slave',
+            "host" => 'hostname-mysql-slave-1',
+            "port" => "3306",
+        ],
+        [
+            "host" => 'hostname-mysql-slave-2',
             "port" => "3306",
         ],
     ];
