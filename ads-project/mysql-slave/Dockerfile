@@ -17,32 +17,27 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-*
 RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
 
 # install mysql
-RUN yum search wget
-RUN yum install -y wget
-# RUN yum install -y mysql-server mysql pwgen supervisor
-# RUN yum install -y gcc make gcc-c++
-
-
 RUN yum -y update; yum clean all
 RUN yum -y install epel-release; yum clean all
 RUN yum -y install mysql-server mysql pwgen supervisor bash-completion psmisc net-tools vim make; yum clean all
 
+# ADD mysql config
+RUN echo "[mysqld]" | tee -a /etc/my.cnf
+RUN echo "log-bin=mysql-bin" | tee -a /etc/my.cnf
+RUN echo "server-id=11" | tee -a /etc/my.cnf
 
-# install tools
-# RUN yum -y install htop mailx tmux vim lynx sshfs wget finger ntp ntpdate git unzip
-
-ADD ./start.sh /start.sh
-ADD ./config_mysql.sh /config_mysql.sh
-ADD ./__start_mysql.sh /__start_mysql.sh
+# Add files
+ADD ./my.cnf /etc/my.cnf.d/my.cnf
+ADD docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 ADD ./supervisord.conf /etc/supervisord.conf
+ADD ./start.sh /start.sh
 
-# RUN echo %sudo	ALL=NOPASSWD: ALL >> /etc/sudoers
-
+RUN chmod 640 /etc/my.cnf.d/my.cnf
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /start.sh
-RUN chmod 755 /config_mysql.sh
-RUN /config_mysql.sh
+
+# RUN sh /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3306
 
 CMD ["/bin/bash", "/start.sh"]
-# CMD ["/sbin/init", "/start.sh"]
