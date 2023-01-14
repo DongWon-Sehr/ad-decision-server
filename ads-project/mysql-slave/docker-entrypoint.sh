@@ -43,7 +43,7 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "grant repli
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select user, host FROM mysql.user;"
 
 ## get  status
-master_log_file=`mysql -uroot -proot -h 172.16.0.10 -S /var/lib/mysql/mysql.sock -e "show master status\G" | grep mysql-bin`
+master_log_file=`mysql -uroot -proot -h 172.16.0.12 -S /var/lib/mysql/mysql.sock -e "show master status\G" | grep mysql-bin`
 re="[a-z]*-bin.[0-9]*"
 
 if [[ ${master_log_file} =~ $re ]];then
@@ -51,7 +51,7 @@ if [[ ${master_log_file} =~ $re ]];then
 fi
 echo "master_log_file: $master_log_file"
 
-master_log_pos=`mysql -uroot -proot -h 172.16.0.10 -S /var/lib/mysql/mysql.sock -e "show master status\G" | grep Position`
+master_log_pos=`mysql -uroot -proot -h 172.16.0.12 -S /var/lib/mysql/mysql.sock -e "show master status\G" | grep Position`
 
 re="[0-9]+"
 
@@ -60,7 +60,7 @@ if [[ ${master_log_pos} =~ $re ]];then
 fi
 echo "master_log_pos: $master_log_pos"
 
-query="change master to master_host='172.16.0.10', master_user='repl', master_password='repl', master_log_file='${master_log_file}', master_log_pos=${master_log_pos}, master_port=3306"
+query="change master to master_host='172.16.0.12', master_user='repl', master_password='repl', master_log_file='${master_log_file}', master_log_pos=${master_log_pos}, master_port=3306"
 
 mysql -uroot -proot -S /var/lib/mysql/mysql.sock -e "${query}"
 mysql -uroot -proot -S /var/lib/mysql/mysql.sock -e "start slave"
