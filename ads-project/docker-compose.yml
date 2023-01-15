@@ -14,7 +14,7 @@ services:
             - "8080:80"
         volumes:
             - ./workspace:/pub/development
-            - ./logs/apache2:/var/log/apache2
+            - ./logs/apache2:/var/log/httpd
             - ./logs/supervisor:/var/log/supervisor
         networks:
             dock_net:
