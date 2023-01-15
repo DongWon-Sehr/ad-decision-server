@@ -148,7 +148,7 @@ class dw_mysql {
     /**
      * @param string|array $sql
      * @param mixed $debug
-     * @return void
+     * @return array|NULL
      */
     function query($sql, $debug = 0)
     {
