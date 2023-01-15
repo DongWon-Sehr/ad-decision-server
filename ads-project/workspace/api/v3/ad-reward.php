@@ -46,30 +46,33 @@ if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
 }
 
 if ( ! isset($ad_id) || ! preg_match("/^\d+$/", $ad_id ) ) {
+    $httpCode = 400;
     $response = [
-        "errorCode" => 400,
+        "errorCode" => $httpCode,
         "message" => "Invalid ad_id",
     ];
-    http_response_code(400);
+    http_response_code($httpCode);
     exit(json_encode($response));
 } else {
     $ad_id = intval($ad_id);
 }
 
 if ( ! isset($reward) ) {
+    $httpCode = 400;
     $response = [
-        "errorCode" => 400,
+        "errorCode" => $httpCode,
         "message" => "Not Found reward",
     ];
-    http_response_code(400);
+    http_response_code($httpCode);
     exit(json_encode($response));
 } else if ( ! preg_match("/^(\d+)$/", $reward, $matches ) 
             || $matches && intval($matches[1]) < 0) {
+    $httpCode = 400;
     $response = [
-        "errorCode" => 400,
+        "errorCode" => $httpCode,
         "message" => "Invalid reward",
     ];
-    http_response_code(400);
+    http_response_code($httpCode);
     exit(json_encode($response));
 } else {
     $reward = intval($matches[1]);
@@ -83,26 +86,25 @@ $sql = "SELECT * FROM ad_campaigns WHERE id = {$ad_id}";
 $ads_list = $m_mysql->query($sql, $debug);
 
 if ( ! $ads_list ) {
-    // return bad request
-    exit;
+    $httpCode = 400;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "Given ad_id not exist",
+    ];
+    http_response_code($httpCode);
+    exit(json_encode($response));
 }
 
 $sql = "UPDATE ad_campaigns SET reward = {$reward} WHERE id = {$ad_id}";
 $query_result = $m_mysql->exec_sql($sql);
 
-if ($query_result === false) {
+if ( ! $query_result ) {
+    $httpCode = 500;
     $response = [
-        "errorCode" => 500,
+        "errorCode" => $httpCode,
         "message" => "Internal Server Error",
     ];
-    http_response_code(500);
-    exit(json_encode($response));
-} else if ($query_result === 0) {
-    $response = [
-        "errorCode" => 400,
-        "message" => "Given id not exist",
-    ];
-    http_response_code(500);
+    http_response_code($httpCode);
     exit(json_encode($response));
 }
 
