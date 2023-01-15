@@ -33,7 +33,9 @@ class dw_mysql {
     function __construct()
     {
         $this->options = [
-            PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => FALSE
+            PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => FALSE,
+            PDO::ATTR_STRINGIFY_FETCHES => FALSE,
+            PDO::ATTR_EMULATE_PREPARES => FALSE,
         ];
     }
 
