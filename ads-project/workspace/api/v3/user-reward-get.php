@@ -57,25 +57,32 @@ if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
 // main -------------------------------------------------------------------------------------------
 
 // set cache key
-$key_prefix = "api-v3-user-reward";
-$cache_key = "{$key_prefix}-{$user_id}";
+$cache_key = "{$user_id}";
 $m_redis = new dw_redis();
 
 // checck if cache data exist
 if ( ! $ignore_cache ) {
-    $cache = $m_redis->get($cache_key);
+    $cache = $m_redis->get_cache("api-v3-user-reward", $cache_key);
     if ($cache) {
+        // set response
+        $response = [
+            "response_at" => date("Y-m-d H:i:s"),
+            "result" => [
+                "user_id" => $cache["id"],
+                "reward" => $cache["reward"],
+            ],
+        ];
         http_response_code(200);
-        exit(json_encode($cache));
+        exit(json_encode($response));
     }
 }
 
 // check history
 $m_mysql = new dw_mysql();
 $sql = "SELECT * FROM user WHERE id = {$user_id}";
-$user = $m_mysql->query($sql, $debug);
+$user_info = $m_mysql->query($sql, $debug);
 
-if ( ! $user ) {
+if ( ! $user_info ) {
     $response = [
         "errorCode" => 404,
         "message" => "Not Found user_id",
@@ -83,16 +90,19 @@ if ( ! $user ) {
     http_response_code(404);
     exit(json_encode($response));
 }
+$user = $user_info;
 
 // set response
 $response = [
-    "date" => date("Y-m-d"),
-    "user_id" => $user[0]["id"],
-    "reward" => $user[0]["reward"],
+    "response_at" => date("Y-m-d H:i:s"),
+    "result" => [
+        "user_id" => $user["id"],
+        "reward" => $user["reward"],
+    ],
 ];
 
-// set cache
-$m_redis->set($cache_key, $response);
+// update cache
+$m_redis->set_cache("api-v3-user-reward", $cache_key, $user);
 
 http_response_code(200);
 exit(json_encode($response));
