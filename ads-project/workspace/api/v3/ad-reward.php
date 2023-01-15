@@ -9,7 +9,7 @@ require_once "library/mysql.php";
 
 /*
 	Caller Example
-	http://localhost:8080/api/v2/ad-reward
+	http://localhost:8080/api/v3/ad-reward
 
     method: PUT
     params: [
