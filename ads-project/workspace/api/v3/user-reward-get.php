@@ -29,6 +29,14 @@ if ( $http_method !== "GET" ) {
 extract($_GET);
 
 // check paramter
+if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
+    $debug = 1;
+    header("Content-Type: text/plain");
+} else {
+    $debug = 0;
+    header("Content-Type: application/json; charset=UTF-8");
+}
+
 if ( ! isset($user_id) || ! preg_match("/^\d+$/", $user_id ) ) {
     $response = [
         "errorCode" => 400,
@@ -38,14 +46,6 @@ if ( ! isset($user_id) || ! preg_match("/^\d+$/", $user_id ) ) {
     exit(json_encode($response));
 } else {
     $user_id = intval($user_id);
-}
-
-if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
-    $debug = 1;
-    header("Content-Type: text/plain");
-} else {
-    $debug = 0;
-    header("Content-Type: application/json; charset=UTF-8");
 }
 
 if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {

@@ -36,6 +36,15 @@ extract($_post_data);
 // So use GET request method
 extract($_GET);
 
+
+if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
+    $debug = 1;
+    header("Content-Type: text/plain");
+} else {
+    $debug = 0;
+    header("Content-Type: application/json; charset=UTF-8");
+}
+
 if ( ! isset($ad_id) || ! preg_match("/^\d+$/", $ad_id ) ) {
     $response = [
         "errorCode" => 400,
@@ -64,14 +73,6 @@ if ( ! isset($reward) ) {
     exit(json_encode($response));
 } else {
     $reward = intval($matches[1]);
-}
-
-if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
-    $debug = 1;
-    header("Content-Type: text/plain");
-} else {
-    $debug = 0;
-    header("Content-Type: application/json; charset=UTF-8");
 }
 
 // main -------------------------------------------------------------------------------------------
