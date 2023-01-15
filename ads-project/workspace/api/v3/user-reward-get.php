@@ -90,7 +90,7 @@ if ( ! $user_info ) {
     http_response_code(404);
     exit(json_encode($response));
 }
-$user = $user_info;
+$user = $user_info[0];
 
 // set response
 $response = [
