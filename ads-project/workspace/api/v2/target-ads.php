@@ -1,5 +1,11 @@
 <?php
 
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: GET");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+
+
 require_once "library/redis.php";
 require_once "library/mysql.php";
 require_once 'library/ad_policy/core/ad_policy_selector.php';
@@ -14,12 +20,12 @@ require_once 'library/ad_policy/core/ad_policy_selector.php';
 */
 
 $http_method = $_SERVER["REQUEST_METHOD"];
-if ( $http_method != "GET" ) {
+if ( $http_method !== "GET" ) {
     $response = [
         "errorCode" => 405,
         "message" => "Method Not Allowed",
     ];
-    header("Content-Type: application/json");
+    http_response_code(405);
     exit(json_encode($response));
 }
 
@@ -29,9 +35,9 @@ extract($_GET);
 if ( ! isset($user_id) || ! preg_match("/^\d+$/", $user_id ) ) {
     $response = [
         "errorCode" => 400,
-        "message" => "Invalid User ID",
+        "message" => "Invalid user_id",
     ];
-    header("Content-Type: application/json");
+    http_response_code(400);
     exit(json_encode($response));
 } else {
     $user_id = intval($user_id);
@@ -40,19 +46,29 @@ if ( ! isset($user_id) || ! preg_match("/^\d+$/", $user_id ) ) {
 if ( ! isset($gender) || ! in_array( $gender, ["M", "F"] ) ) {
     $response = [
         "errorCode" => 400,
-        "message" => "Invalid Gender",
+        "message" => "Invalid gender",
     ];
-    header("Content-Type: application/json");
+    http_response_code(400);
     exit(json_encode($response));
 }
 
 if ( ! isset($country) ) {
     $response = [
         "errorCode" => 400,
-        "message" => "Invalid Country",
+        "message" => "Invalid country",
     ];
-    header("Content-Type: application/json");
+    http_response_code(400);
     exit(json_encode($response));
+}
+
+if ( isset($debug) && $debug !== "1" ) {
+    $debug = 1;
+} else {
+    $debug = 0;
+}
+
+if ($debug) {
+    header("Content-Type: text/plain");
 }
 
 if ( ! isset($ignore_cache) || ($ignore_cache != "1" && $ignore_cache != "true") ) {
@@ -80,26 +96,17 @@ if ( ! $ads_list ) {
     $ads_list = $m_mysql->query($sql, $debug);
 }
 
-$ads_count = @count($ads_list);
-if ( ! $ads_count ) {
-    $response = [
-        "errorCode" => 400,
-        "message" => "No Target Ads",
-    ];
-    header("Content-Type: application/json");
-    exit(json_encode($response));
-}
-
 // get max 3 target ads via weight
-$m_ad_policy_selector = new AdPolicySelector($user_id, $ads_list);
+$m_ad_policy_selector = new AdPolicySelector($user_id, $ads_list ?? []);
 $target_ads = $m_ad_policy_selector->get_target_ads();
 
+// set response
 $response = [
     "policy" => $m_ad_policy_selector->get_policy_title(),
     "target_ads" => [],
 ];
 
-foreach ($target_ads as $_ad_info) {
+if ($target_ads) foreach ($target_ads as $_ad_info) {
     $response["target_ads"] []= [
         "id" => $_ad_info["id"],
         "name" => $_ad_info["name"],
@@ -109,10 +116,13 @@ foreach ($target_ads as $_ad_info) {
     ];
 }
 
-$m_redis->set($cache_key, $ads_list);
+// set cache if db query exist
+if ( $ads_list ) {
+    $m_redis->set($cache_key, $ads_list);
+}
 
 // response
-header("Content-Type: application/json");
-echo json_encode($response);
+http_response_code(200);
+exit(json_encode($response));
 
 ?>
