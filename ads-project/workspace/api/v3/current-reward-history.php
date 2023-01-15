@@ -88,6 +88,8 @@ if ($reward_queue_info) {
         $response["result"] []= [
             "type" => $_reward_queue["type"],
             "reward" => $_reward_queue["reward"],
+            "created_at" => $_reward_queue["created_at"],
+            "approved_at" => $_reward_queue["approved_at"],
             "status" => $_reward_queue["approved_at"] ? "approved" : "pending",
         ];
     }
