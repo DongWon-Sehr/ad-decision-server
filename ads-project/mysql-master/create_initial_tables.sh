@@ -33,9 +33,9 @@ id INT(11) AUTO_INCREMENT, \
 name VARCHAR(64) NOT NULL, \
 gender VARCHAR(64) NOT NULL, \
 country VARCHAR(64) NOT NULL, \
+reward INT(11) NOT NULL DEFAULT 0, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
-reward INT(11) NOT NULL DEFAULT 0, \
 PRIMARY KEY(id) \
 ); \
 "
@@ -48,8 +48,8 @@ VALUES \
 ('dongwon', 'M', 'KR'), \
 ('wanna', 'F', 'US'), \
 ('join', 'M', 'HK'), \
-('buzz', 'F', 'JP'), \
-('vill', 'M', 'TW') \
+('buzzvil', 'F', 'JP'), \
+('team', 'M', 'TW') \
 ;"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT * FROM buzzvil.user;"
 
@@ -61,6 +61,7 @@ user_id INT(11), \
 ad_id INT(11), \
 reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
+rewarded_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 PRIMARY KEY(id, ad_id, user_id),
 CONSTRAINT FK_ad_campaigns_ad_issue FOREIGN KEY(ad_id) REFERENCES ad_campaigns(id),
 CONSTRAINT FK_user_ad_issue FOREIGN KEY(user_id) REFERENCES user(id)
@@ -72,16 +73,12 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 CREATE TABLE buzzvil.reward_history ( \
 id INT(11) AUTO_INCREMENT, \
 type varchar(64) NOT NULL, \
-ad_issue_id VARCHAR(64), \
 user_id INT(11), \
-ad_id INT(11), \
 reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 approved_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 PRIMARY KEY(id),
-CONSTRAINT FK_ad_campaigns_reward_history FOREIGN KEY(ad_id) REFERENCES ad_campaigns(id),
 CONSTRAINT FK_user_reward_history FOREIGN KEY(user_id) REFERENCES user(id),
-CONSTRAINT FK_ad_issue_reward_history FOREIGN KEY(ad_issue_id) REFERENCES ad_issue(id)
 ); \
 "
 
