@@ -58,9 +58,9 @@ VALUES \
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT * FROM buzzvil.user;"
 
 echo ""
-echo "Create a table: buzzvil.reward_queue"
+echo "Create a table: buzzvil.user_reward_queue"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-CREATE TABLE buzzvil.reward_queue ( \
+CREATE TABLE buzzvil.user_reward_queue ( \
 id INT(11) AUTO_INCREMENT, \
 type varchar(64) NOT NULL, \
 user_id INT(11), \
@@ -68,7 +68,7 @@ reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 approved_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 PRIMARY KEY(id),
-CONSTRAINT FK_user_reward_queue FOREIGN KEY(user_id) REFERENCES user(id) ON UPDATE CASCADE
+CONSTRAINT FK_user_user_reward_queue FOREIGN KEY(user_id) REFERENCES user(id) ON UPDATE CASCADE
 );"
 
 echo ""
@@ -80,10 +80,10 @@ user_id INT(11), \
 ad_id INT(11), \
 reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
-reward_queue_id INT(11) DEFAULT NULL, \
+user_reward_queue_id INT(11) DEFAULT NULL, \
 PRIMARY KEY(id, ad_id, user_id),
 CONSTRAINT FK_user_ad_issue FOREIGN KEY(user_id) REFERENCES user(id) ON UPDATE CASCADE,
 CONSTRAINT FK_ad_campaigns_ad_issue FOREIGN KEY(ad_id) REFERENCES ad_campaigns(id) ON UPDATE CASCADE,
-CONSTRAINT FK_reward_queue_ad_issue FOREIGN KEY(reward_queue_id) REFERENCES reward_queue(id) ON UPDATE CASCADE
+CONSTRAINT FK_user_reward_queue_ad_issue FOREIGN KEY(user_reward_queue_id) REFERENCES user_reward_queue(id) ON UPDATE CASCADE
 );"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW tables FROM buzzvil;"

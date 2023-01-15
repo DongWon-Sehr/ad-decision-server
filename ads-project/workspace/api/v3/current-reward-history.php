@@ -78,8 +78,8 @@ if ( ! $ignore_cache ) {
 
 // check history in DB
 $m_mysql = new dw_mysql();
-$sql = "SELECT * FROM reward_queue WHERE user_id = {$user_id} AND created_at > '$target_date' ORDER BY created_at DESC";
-$reward_queue_info = $m_mysql->query($sql);
+$sql = "SELECT * FROM user_reward_queue WHERE user_id = {$user_id} AND created_at > '$target_date' ORDER BY created_at DESC";
+$user_reward_queue_info = $m_mysql->query($sql);
 
 // init response
 $response = [
@@ -90,15 +90,15 @@ $response = [
 ];
 
 $result = [];
-if ($reward_queue_info) {
+if ($user_reward_queue_info) {
     // set response
-    foreach ($reward_queue_info as $_reward_queue) {
+    foreach ($user_reward_queue_info as $_user_reward_queue) {
         $result []= [
-            "type" => $_reward_queue["type"],
-            "reward" => $_reward_queue["reward"],
-            "created_at" => $_reward_queue["created_at"],
-            "approved_at" => $_reward_queue["approved_at"],
-            "status" => $_reward_queue["approved_at"] ? "approved" : "pending",
+            "type" => $_user_reward_queue["type"],
+            "reward" => $_user_reward_queue["reward"],
+            "created_at" => $_user_reward_queue["created_at"],
+            "approved_at" => $_user_reward_queue["approved_at"],
+            "status" => $_user_reward_queue["approved_at"] ? "approved" : "pending",
         ];
     }
 

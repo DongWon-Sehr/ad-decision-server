@@ -148,12 +148,12 @@ if ( $type === "use") {
         exit(json_encode($response));
     }
 
-    // insert reward_queue
-    $sql = "INSERT INTO reward_queue (type, user_id, reward, created_at) VALUES ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
+    // insert user_reward_queue
+    $sql = "INSERT INTO user_reward_queue (type, user_id, reward, created_at) VALUES ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
     $exec_result = $m_mysql->exec_sql($sql, $debug);
 
 } else if ( $type === "earn") {
-    // check ad_issue & reward_queue info
+    // check ad_issue & user_reward_queue info
     $sql = "SELECT *
               FROM ad_issue 
              WHERE id = '{$ad_issue_id}' 
@@ -169,7 +169,7 @@ if ( $type === "use") {
         ];
         http_response_code($httpCode);
         exit(json_encode($response));
-    } else if ( $ad_issue_info[0]["reward_queue_id"] ) {
+    } else if ( $ad_issue_info[0]["user_reward_queue_id"] ) {
         $httpCode = 400;
         $response = [
             "errorCode" => $httpCode,
@@ -187,8 +187,8 @@ if ( $type === "use") {
         exit(json_encode($response));
     }
     
-    // insert reward_queue
-    $sql = "INSERT INTO reward_queue (type, user_id, reward, created_at) VALUES ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
+    // insert user_reward_queue
+    $sql = "INSERT INTO user_reward_queue (type, user_id, reward, created_at) VALUES ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
     $exec_result = $m_mysql->exec_sql($sql, $debug);
 
     if ( ! $exec_result ) {
@@ -202,17 +202,17 @@ if ( $type === "use") {
     }
 }
 
-// get reward_queue_id just created
+// get user_reward_queue_id just created
 $sql = "SELECT * 
-          FROM reward_queue
+          FROM user_reward_queue
          WHERE type = '{$type}'
            AND user_id = {$user_id}
            AND reward = {$reward}
            AND created_at = '{$created_at}'
            AND approved_at IS NULL";
-$reward_queue_info = $m_mysql->query($sql, $debug);
+$user_reward_queue_info = $m_mysql->query($sql, $debug);
 
-if ( ! $reward_queue_info ) {
+if ( ! $user_reward_queue_info ) {
     $httpCode = 500;
     $response = [
         "errorCode" => $httpCode,
@@ -221,12 +221,12 @@ if ( ! $reward_queue_info ) {
     http_response_code($httpCode);
     exit(json_encode($response));
 }
-$reward_queue = $reward_queue_info[0];
+$user_reward_queue = $user_reward_queue_info[0];
 
 if ( $type === "earn") {
     // update ad_issue
     $sql = "UPDATE ad_issue 
-               SET reward_queue_id = {$reward_queue["id"]}
+               SET user_reward_queue_id = {$user_reward_queue["id"]}
              WHERE id = '{$ad_issue_id}' 
                AND user_id = {$user_id} 
                AND ad_id = {$ad_id}";
@@ -258,9 +258,9 @@ if ( ! $exec_result ) {
     exit(json_encode($response));
 }
 
-// update reward_queue.approved_at
+// update user_reward_queue.approved_at
 $approved_at = date("Y-m-d H:i:s");
-$sql = "UPDATE reward_queue SET approved_at = '{$approved_at}' WHERE id = {$reward_queue["id"]}";
+$sql = "UPDATE user_reward_queue SET approved_at = '{$approved_at}' WHERE id = {$user_reward_queue["id"]}";
 $exec_result = $m_mysql->exec_sql($sql, $debug);
 if ( ! $exec_result ) {
     $httpCode = 500;
