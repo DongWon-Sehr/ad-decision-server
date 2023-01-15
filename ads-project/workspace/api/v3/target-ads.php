@@ -30,9 +30,9 @@ if ( $http_method !== "GET" ) {
     exit(json_encode($response));
 }
 
-// validate parameters
 extract($_GET);
 
+// check paramter
 if ( ! isset($user_id) || ! preg_match("/^\d+$/", $user_id ) ) {
     $response = [
         "errorCode" => 400,
@@ -62,7 +62,7 @@ if ( ! isset($country) ) {
     exit(json_encode($response));
 }
 
-if ( isset($debug) && $debug !== "1" ) {
+if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
     $debug = 1;
     header("Content-Type: text/plain");
 } else {
@@ -70,10 +70,12 @@ if ( isset($debug) && $debug !== "1" ) {
     header("Content-Type: application/json; charset=UTF-8");
 }
 
-if ( ! isset($ignore_cache) || ($ignore_cache != "1" && $ignore_cache != "true") ) {
-    $ignore_cache = false;
+if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
+    $ignore_cache = 1;
+    header("Content-Type: text/plain");
 } else {
-    $ignore_cache = true;
+    $ignore_cache = 0;
+    header("Content-Type: application/json; charset=UTF-8");
 }
 
 // main -------------------------------------------------------------------------------------------
@@ -109,7 +111,7 @@ $response = [
     "target_ads" => [],
 ];
 
-$sql = "INSERT INTO ad_issue (id, user_id, ad_id, reward) VALUES ";
+$sql = "INSERT INTO ad_issue (id, user_id, ad_id, reward, created_at) VALUES ";
 $values = "";
 if ($target_ads) {
 
@@ -125,7 +127,7 @@ if ($target_ads) {
 
         // set query
         if ($values) $values .= ", ";
-        $values .= "('{$ad_issue_id}', {$id}, {$_ad_info["id"]}, {$_ad_info["reward"]})"; 
+        $values .= "('{$ad_issue_id}', {$id}, {$_ad_info["id"]}, {$_ad_info["reward"]}, '{$created_at}')"; 
     }
 
     // insert ad issue data @table: ad_issue
