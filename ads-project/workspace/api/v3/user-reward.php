@@ -12,11 +12,10 @@ require_once "library/mysql.php";
 	http://localhost:8080/api/v3/user-reward
 
     // get user reward
-    method: GET
-    params: [
-        "user_id" => 1,     mandatory
-        "debug" => 1,       optional
-    ]
+	http://localhost:8080/api/v3/user-reward\
+		?user_id=1\         mandatory
+        &ignore_cache=0     optional
+        &debug=0            optional
 
     // set user reward
     method: PUT
