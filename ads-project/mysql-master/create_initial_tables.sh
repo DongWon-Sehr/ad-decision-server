@@ -41,7 +41,7 @@ PRIMARY KEY(id)
 echo "Insert sample users: buzzvil.user"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 INSERT INTO buzzvil.user (name) \
-VALUES ('buzz'), ('vill'); \
+VALUES ('dongwon'), ('wanna'), ('join'), ('buzz'), ('vill'); \
 "
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT * FROM buzzvil.user;"
 
