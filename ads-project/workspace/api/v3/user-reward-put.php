@@ -43,6 +43,14 @@ extract($_post_data);
 extract($_GET);
 
 // check parameter
+if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
+    $debug = 1;
+    header("Content-Type: text/plain");
+} else {
+    $debug = 0;
+    header("Content-Type: application/json; charset=UTF-8");
+}
+
 if ( ! isset($type) || ! in_array($type, ["use", "earn"] ) ) {
     $httpCode = 400;
     $response = [
@@ -97,14 +105,6 @@ if ( ! isset($ad_id) || ! preg_match("/^\d+$/", $ad_id ) ) {
     exit(json_encode($response));
 } else {
     $ad_id = intval($ad_id);
-}
-
-if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
-    $debug = 1;
-    header("Content-Type: text/plain");
-} else {
-    $debug = 0;
-    header("Content-Type: application/json; charset=UTF-8");
 }
 
 if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
