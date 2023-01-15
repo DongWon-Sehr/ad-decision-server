@@ -73,7 +73,7 @@ if ( ! $ignore_cache ) {
 // check history in DB
 $m_mysql = new dw_mysql();
 $sql = "SELECT * FROM reward_queue WHERE user_id = {$user_id} AND created_at > '$target_date' ORDER BY created_at DESC";
-$history = $m_mysql->query($sql);
+$reward_queue_info = $m_mysql->query($sql);
 
 // init response
 $response = [
@@ -82,13 +82,13 @@ $response = [
     "result" => [],
 ];
 
-if ($history) {
+if ($reward_queue_info) {
     // set response
-    foreach ($history as $_reward_info) {
+    foreach ($reward_queue_info as $_reward_queue) {
         $response["result"] []= [
-            "type" => $_reward_info["type"],
-            "reward" => $_reward_info["reward"],
-            "status" => $_reward_info["approved_at"] ? "approved" : "pending",
+            "type" => $_reward_queue["type"],
+            "reward" => $_reward_queue["reward"],
+            "status" => $_reward_queue["approved_at"] ? "approved" : "pending",
         ];
     }
 
