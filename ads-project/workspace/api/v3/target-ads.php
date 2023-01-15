@@ -12,7 +12,7 @@ require_once 'library/ad_policy/core/ad_policy_selector.php';
 
 /*
 	Caller Example
-	http://localhost:8080/api/v2/target-ads\
+	http://localhost:8080/api/v3/target-ads\
 		?user_id=1\         mandatory
         &gender=F\	        mandatory
         &country=KR         mandatory
@@ -79,7 +79,7 @@ if ( ! isset($ignore_cache) || ($ignore_cache != "1" && $ignore_cache != "true")
 // main -------------------------------------------------------------------------------------------
 
 // set cache key
-$key_prefix = "api-v2-target-ads";
+$key_prefix = "api-v3-target-ads";
 $cache_key = "{$key_prefix}-{$gender}-{$country}";
 $m_redis = new dw_redis();
 
@@ -89,8 +89,8 @@ if ( ! $ignore_cache ) {
 }
 
 // get ads list from db
+$m_mysql = new dw_mysql();
 if ( ! $ads_list ) {
-    $m_mysql = new dw_mysql();
     $sql = "SELECT * FROM ad_campaigns WHERE target_country = '{$country}' AND target_gender = '{$gender}'";
     $ads_list = $m_mysql->query($sql, $debug);
 }
@@ -99,21 +99,38 @@ if ( ! $ads_list ) {
 $m_ad_policy_selector = new AdPolicySelector($user_id, $ads_list ?? []);
 $target_ads = $m_ad_policy_selector->get_target_ads();
 
-// set response
+// init response
+$ad_issue_id = md5($id . $created_at);
+$created_at = date("Y-m-d H:i:s");
 $response = [
+    "ad_issue_id" => $ad_issue_id,
+    "created_at" => $created_at,
     "policy" => $m_ad_policy_selector->get_policy_title(),
-    "issue_date" => date("Y-m-d H:i:s"),
     "target_ads" => [],
 ];
 
-if ($target_ads) foreach ($target_ads as $_ad_info) {
-    $response["target_ads"] []= [
-        "id" => $_ad_info["id"],
-        "name" => $_ad_info["name"],
-        "image_url" => $_ad_info["image_url"],
-        "landing_url" => $_ad_info["landing_url"],
-        "reward" => $_ad_info["reward"],
-    ];
+$sql = "INSERT INTO ad_issue (id, user_id, ad_id, reward) VALUES ";
+$values = "";
+if ($target_ads) {
+
+    // set response
+    foreach ($target_ads as $_ad_info) {
+        $response["target_ads"] []= [
+            "id" => $_ad_info["id"],
+            "name" => $_ad_info["name"],
+            "image_url" => $_ad_info["image_url"],
+            "landing_url" => $_ad_info["landing_url"],
+            "reward" => $_ad_info["reward"],
+        ];
+
+        // set query
+        if ($values) $values .= ", ";
+        $values .= "('{$ad_issue_id}', {$id}, {$_ad_info["id"]}, {$_ad_info["reward"]})"; 
+    }
+
+    // insert ad issue data @table: ad_issue
+    $sql = $sql . $values;
+    $m_mysql->exec_sql($sql);
 }
 
 // set cache if db query exist
