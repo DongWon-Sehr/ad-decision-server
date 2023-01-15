@@ -72,10 +72,8 @@ if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
 
 if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
     $ignore_cache = 1;
-    header("Content-Type: text/plain");
 } else {
     $ignore_cache = 0;
-    header("Content-Type: application/json; charset=UTF-8");
 }
 
 // main -------------------------------------------------------------------------------------------
@@ -102,8 +100,8 @@ $m_ad_policy_selector = new AdPolicySelector($user_id, $ads_list ?? []);
 $target_ads = $m_ad_policy_selector->get_target_ads();
 
 // init response
-$ad_issue_id = md5($id . $created_at);
 $created_at = date("Y-m-d H:i:s");
+$ad_issue_id = md5($user_id . $created_at);
 $response = [
     "ad_issue_id" => $ad_issue_id,
     "created_at" => $created_at,
@@ -127,12 +125,21 @@ if ($target_ads) {
 
         // set query
         if ($values) $values .= ", ";
-        $values .= "('{$ad_issue_id}', {$id}, {$_ad_info["id"]}, {$_ad_info["reward"]}, '{$created_at}')"; 
+        $values .= "('{$ad_issue_id}', {$user_id}, {$_ad_info["id"]}, {$_ad_info["reward"]}, '{$created_at}')"; 
     }
 
     // insert ad issue data @table: ad_issue
     $sql = $sql . $values;
-    $m_mysql->exec_sql($sql);
+    $exec_result = $m_mysql->exec_sql($sql, $debug);
+    if ( ! $exec_result ) {
+        $httpCode = 500;
+        $response = [
+            "errorCode" => $httpCode,
+            "message" => "Internal Server Error",
+        ];
+        http_response_code($httpCode);
+        exit(json_encode($response));
+    }
 }
 
 // set cache if db query exist
