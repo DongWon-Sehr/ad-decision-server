@@ -13,7 +13,7 @@ require_once "library/mysql.php";
 
     method: PUT
     params: [
-        "id" => 1,      mandatory
+        "ad_id" => 1,      mandatory
         "reward" => 33, mandatory
         "debug" => 1,   optional
     ]
@@ -36,15 +36,15 @@ extract($_post_data);
 // So use GET request method
 extract($_GET);
 
-if ( ! isset($id) || ! preg_match("/^\d+$/", $id ) ) {
+if ( ! isset($ad_id) || ! preg_match("/^\d+$/", $ad_id ) ) {
     $response = [
         "errorCode" => 400,
-        "message" => "Invalid id",
+        "message" => "Invalid ad_id",
     ];
     http_response_code(400);
     exit(json_encode($response));
 } else {
-    $id = intval($id);
+    $ad_id = intval($ad_id);
 }
 
 if ( ! isset($reward) ) {
@@ -78,7 +78,7 @@ if ( isset($debug) && $debug !== "1" ) {
 
 // check target ad exist
 $m_mysql = new dw_mysql();
-$sql = "SELECT * FROM ad_campaigns WHERE id = {$id}";
+$sql = "SELECT * FROM ad_campaigns WHERE id = {$ad_id}";
 $ads_list = $m_mysql->query($sql, $debug);
 
 if ( ! $ads_list ) {
@@ -86,7 +86,7 @@ if ( ! $ads_list ) {
     exit;
 }
 
-$sql = "UPDATE ad_campaigns SET reward = {$reward} WHERE id = {$id}";
+$sql = "UPDATE ad_campaigns SET reward = {$reward} WHERE id = {$ad_id}";
 $query_result = $m_mysql->exec_sql($sql);
 
 if ($query_result === false) {
@@ -107,7 +107,7 @@ if ($query_result === false) {
 
 $response = [
     "result" => [
-        "id" => $id,
+        "ad_id" => $ad_id,
         "reward" => $reward,
     ]
 ];
