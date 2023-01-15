@@ -18,6 +18,7 @@ require_once "library/mysql.php";
         "debug" => 1,   optional
     ]
 */
+$MAX_REWARD_LIMIT = 100;
 
 $http_method = $_SERVER["REQUEST_METHOD"];
 if ( $http_method !== "PUT" ) {
@@ -66,7 +67,8 @@ if ( ! isset($reward) ) {
     http_response_code($httpCode);
     exit(json_encode($response));
 } else if ( ! preg_match("/^(\d+)$/", $reward, $matches ) 
-            || $matches && intval($matches[1]) < 0) {
+            || $matches && intval($matches[1]) < 0
+            || $matches && intval($matches[1]) > $MAX_REWARD_LIMIT ) {
     $httpCode = 400;
     $response = [
         "errorCode" => $httpCode,
