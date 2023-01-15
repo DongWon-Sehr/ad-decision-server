@@ -1,7 +1,6 @@
 <?php
 
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
@@ -17,6 +16,7 @@ require_once 'library/ad_policy/core/ad_policy_selector.php';
         &gender=F\	        mandatory
         &country=KR         mandatory
         &ignore_cache=0     optional
+        &debug=0            optional
 */
 
 $http_method = $_SERVER["REQUEST_METHOD"];
@@ -63,12 +63,10 @@ if ( ! isset($country) ) {
 
 if ( isset($debug) && $debug !== "1" ) {
     $debug = 1;
+    header("Content-Type: text/plain");
 } else {
     $debug = 0;
-}
-
-if ($debug) {
-    header("Content-Type: text/plain");
+    header("Content-Type: application/json; charset=UTF-8");
 }
 
 if ( ! isset($ignore_cache) || ($ignore_cache != "1" && $ignore_cache != "true") ) {
