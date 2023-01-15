@@ -116,20 +116,8 @@ if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
 // main -------------------------------------------------------------------------------------------
 
 // set cache key
-$key_prefix = "api-v3-user-reward-put";
-$target_date = date("Y-m-d", strtotime("-7 Day"));
-$cache_key = "{$key_prefix}-{$user_id}-{$target_date}";
+$cache_key = "{$user_id}";
 $m_redis = new dw_redis();
-
-// checck if cache data exist
-if ( ! $ignore_cache ) {
-    $cache = $m_redis->get($cache_key);
-    if ($cache) {
-        $httpCode = 200;
-        http_response_code($httpCode);
-        exit(json_encode($cache));
-    }
-}
 
 // check user info
 $m_mysql = new dw_mysql();
@@ -300,11 +288,16 @@ $user = $user_info[0];
 
 // response
 $response = [
+    "response_at" => date("Y-m-d H:i:s"),
     "result" => [
         "user_id" => $user["id"],
         "reward" => $user["reward"],
     ],
 ];
+
+// update cache
+$m_redis->set_cache("api-v3-user-reward", $cache_key, $user);
+
 http_response_code(200);
 exit(json_encode($response));
 
