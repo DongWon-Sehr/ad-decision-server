@@ -66,7 +66,7 @@ if ( ! isset($reward) ) {
     $reward = intval($matches[1]);
 }
 
-if ( isset($debug) && $debug !== "1" ) {
+if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
     $debug = 1;
     header("Content-Type: text/plain");
 } else {
