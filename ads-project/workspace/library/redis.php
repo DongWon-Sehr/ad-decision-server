@@ -122,18 +122,7 @@ class dw_redis
             if ((strpos($key, "*") == true) || ($key == "*")) {
                 $key_list = $this->redis->keys($this->key_prefix . $key);
                 if (@count($key_list)) {
-
-                    // delete key by list
                     $this->redis->delete($key_list);
-
-                    /*
-                        below is slower than above
-                        --------------------------
-                        foreach($key_list as $val)
-                        {
-                            $this->redis->delete( $val);
-                        }
-                    */
                 }
             } else {
                 $this->redis->delete($this->key_prefix . $key);
