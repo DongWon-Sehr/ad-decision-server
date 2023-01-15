@@ -21,12 +21,6 @@ RUN yum -y update; yum clean all
 RUN yum -y install epel-release; yum clean all
 RUN yum -y install mysql-server mysql pwgen supervisor bash-completion psmisc net-tools vim make; yum clean all
 
-# ADD mysql config
-RUN echo "[mysqld]" | tee -a /etc/my.cnf
-RUN echo "log-bin=mysql-bin" | tee -a /etc/my.cnf
-RUN echo "server-id=10" | tee -a /etc/my.cnf
-RUN echo "default_time_zone='+09:00'" | tee -a /etc/my.cnf
-
 # Add files
 ADD ./my.cnf /etc/my.cnf.d/my.cnf
 ADD docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -34,7 +28,8 @@ ADD ./create_initial_tables.sh /usr/local/bin/create_initial_tables.sh
 ADD ./supervisord.conf /etc/supervisord.conf
 ADD ./start.sh /start.sh
 
-RUN chmod 640 /etc/my.cnf.d/my.cnf
+RUN chmod 755 /etc/my.cnf.d/my.cnf
+RUN chmod 755 /etc/my.cnf
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/create_initial_tables.sh
 RUN chmod 755 /start.sh
