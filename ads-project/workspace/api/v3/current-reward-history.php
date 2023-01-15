@@ -49,10 +49,8 @@ if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
 
 if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
     $ignore_cache = 1;
-    header("Content-Type: text/plain");
 } else {
     $ignore_cache = 0;
-    header("Content-Type: application/json; charset=UTF-8");
 }
 
 // main -------------------------------------------------------------------------------------------
