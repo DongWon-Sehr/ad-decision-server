@@ -12,8 +12,7 @@ target_country VARCHAR(64) DEFAULT NULL, \
 target_gender VARCHAR(64) DEFAULT NULL, \
 reward INT(11) DEFAULT NULL, \
 PRIMARY KEY(id)
-); \
-"
+);"
 
 echo "Load & insert csv data into buzzvil.ad_campaigns"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
@@ -37,8 +36,7 @@ reward INT(11) NOT NULL DEFAULT 0, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 PRIMARY KEY(id) \
-); \
-"
+);"
 
 echo "Insert sample users: buzzvil.user"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
@@ -61,12 +59,12 @@ user_id INT(11), \
 ad_id INT(11), \
 reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
-rewarded_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
+reward_queue_id INT(11) DEFAULT NULL, \
 PRIMARY KEY(id, ad_id, user_id),
-CONSTRAINT FK_ad_campaigns_ad_issue FOREIGN KEY(ad_id) REFERENCES ad_campaigns(id),
-CONSTRAINT FK_user_ad_issue FOREIGN KEY(user_id) REFERENCES user(id)
-); \
-"
+CONSTRAINT FK_user_ad_issue FOREIGN KEY(user_id) REFERENCES user(id) ON UPDATE CASCADE,
+CONSTRAINT FK_ad_campaigns_ad_issue FOREIGN KEY(ad_id) REFERENCES ad_campaigns(id) ON UPDATE CASCADE,
+CONSTRAINT FK_reward_queue_ad_issue FOREIGN KEY(reward_queue_id) REFERENCES reward_queue(id) ON UPDATE CASCADE
+);"
 
 echo "Create a table: buzzvil.reward_queue"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
@@ -78,8 +76,7 @@ reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 approved_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 PRIMARY KEY(id),
-CONSTRAINT FK_user_reward_queue FOREIGN KEY(user_id) REFERENCES user(id),
-); \
-"
+CONSTRAINT FK_user_reward_queue FOREIGN KEY(user_id) REFERENCES user(id) ON UPDATE CASCADE
+);"
 
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW tables FROM buzzvil;"
