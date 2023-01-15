@@ -50,10 +50,8 @@ if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
 
 if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
     $ignore_cache = 1;
-    header("Content-Type: text/plain");
 } else {
     $ignore_cache = 0;
-    header("Content-Type: application/json; charset=UTF-8");
 }
 
 // main -------------------------------------------------------------------------------------------
@@ -75,7 +73,7 @@ if ( ! $ignore_cache ) {
 // check history
 $m_mysql = new dw_mysql();
 $sql = "SELECT * FROM user WHERE id = {$user_id}";
-$user = $m_mysql->query($sql);
+$user = $m_mysql->query($sql, $debug);
 
 if ( ! $user ) {
     $response = [
