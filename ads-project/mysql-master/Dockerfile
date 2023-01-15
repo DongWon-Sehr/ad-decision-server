@@ -25,17 +25,18 @@ RUN yum -y install mysql-server mysql pwgen supervisor bash-completion psmisc ne
 RUN echo "[mysqld]" | tee -a /etc/my.cnf
 RUN echo "log-bin=mysql-bin" | tee -a /etc/my.cnf
 RUN echo "server-id=10" | tee -a /etc/my.cnf
+RUN echo "default_time_zone='+09:00'" | tee -a /etc/my.cnf
 
 # Add files
 ADD ./my.cnf /etc/my.cnf.d/my.cnf
 ADD docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-ADD ./__import_ad_campaigns_data.sh /usr/local/bin/__import_ad_campaigns_data.sh
+ADD ./create_initial_tables.sh /usr/local/bin/create_initial_tables.sh
 ADD ./supervisord.conf /etc/supervisord.conf
 ADD ./start.sh /start.sh
 
 RUN chmod 640 /etc/my.cnf.d/my.cnf
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
-RUN chmod 755 /usr/local/bin/__import_ad_campaigns_data.sh
+RUN chmod 755 /usr/local/bin/create_initial_tables.sh
 RUN chmod 755 /start.sh
 
 # RUN sh /usr/local/bin/docker-entrypoint.sh
