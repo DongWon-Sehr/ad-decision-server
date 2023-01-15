@@ -68,9 +68,9 @@ CONSTRAINT FK_user_ad_issue FOREIGN KEY(user_id) REFERENCES user(id)
 ); \
 "
 
-echo "Create a table: buzzvil.reward_history"
+echo "Create a table: buzzvil.reward_queue"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-CREATE TABLE buzzvil.reward_history ( \
+CREATE TABLE buzzvil.reward_queue ( \
 id INT(11) AUTO_INCREMENT, \
 type varchar(64) NOT NULL, \
 user_id INT(11), \
@@ -78,7 +78,7 @@ reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 approved_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 PRIMARY KEY(id),
-CONSTRAINT FK_user_reward_history FOREIGN KEY(user_id) REFERENCES user(id),
+CONSTRAINT FK_user_reward_queue FOREIGN KEY(user_id) REFERENCES user(id),
 ); \
 "
 
