@@ -49,8 +49,8 @@ echo "Create a table: buzzvil.ad_issue"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 CREATE TABLE buzzvil.ad_issue ( \
 id VARCHAR(64), \
-ad_id INT(11), \
 user_id INT(11), \
+ad_id INT(11), \
 reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 PRIMARY KEY(id, ad_id, user_id),
@@ -64,9 +64,9 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 CREATE TABLE buzzvil.reward_history ( \
 id INT(11) AUTO_INCREMENT, \
 type varchar(64) NOT NULL, \
-ad_id INT(11), \
-user_id INT(11), \
 ad_issue_id VARCHAR(64), \
+user_id INT(11), \
+ad_id INT(11), \
 reward INT(11) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 approved_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
