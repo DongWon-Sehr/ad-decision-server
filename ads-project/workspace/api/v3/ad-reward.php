@@ -13,7 +13,7 @@ require_once "library/mysql.php";
 
     method: PUT
     params: [
-        "ad_id" => 1,      mandatory
+        "ad_id" => 1,   mandatory
         "reward" => 33, mandatory
         "debug" => 1,   optional
     ]
