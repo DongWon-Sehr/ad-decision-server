@@ -31,18 +31,26 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 CREATE TABLE buzzvil.user ( \
 id INT(11) AUTO_INCREMENT, \
 name VARCHAR(64) NOT NULL, \
+gender VARCHAR(64) NOT NULL, \
+country VARCHAR(64) NOT NULL, \
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \
 updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, \
 reward INT(11) NOT NULL DEFAULT 0, \
-PRIMARY KEY(id)
+PRIMARY KEY(id) \
 ); \
 "
 
 echo "Insert sample users: buzzvil.user"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-INSERT INTO buzzvil.user (name) \
-VALUES ('dongwon'), ('wanna'), ('join'), ('buzz'), ('vill'); \
-"
+INSERT INTO \
+buzzvil.user (name) \
+VALUES \
+('dongwon', 'M', 'KR'), \
+('wanna', 'F', 'US'), \
+('join', 'M', 'HK'), \
+('buzz', 'F', 'JP'), \
+('vill', 'M', 'TW') \
+;"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT * FROM buzzvil.user;"
 
 echo "Create a table: buzzvil.ad_issue"
