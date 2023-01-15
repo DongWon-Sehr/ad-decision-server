@@ -9,6 +9,7 @@ class dw_mysql {
     public $password = 'buzzvil';
     public $database = "buzzvil";
     public $options = NULL;
+    public $normalizeToNFC = true;
     public $master = [
         "host" => 'hostname-mysql-master',
         "port" => "3306",
@@ -96,6 +97,26 @@ class dw_mysql {
         $this->connection = NULL;
     }
 
+    function normalizeToNFC($target, $debug = 0)
+    {
+        if (class_exists("Normalizer")) {
+            if ( ! $target || is_numeric($target) ) {
+                return $target;
+            } else if ( is_string($target) ) {
+                return Normalizer::normalize($target, Normalizer::FORM_C);
+            } else if ( is_array($target) ) {
+                $keys = array_keys($target);
+                for ($i = 0; $i < count($target); $i++) {
+                    $target[$keys[$i]] = $this->normalizeToNFC($target[$keys[$i]], $debug);
+                }
+                return $target;
+            }
+        } else {
+            if ($debug) "Class Normalizer Not Found";
+            return NULL;
+        }
+    }
+
     function route_query(string $sql, $debug = 0)
     {
         if (isset($this->master) && isset($this->slave)) {
@@ -124,8 +145,14 @@ class dw_mysql {
         }
     }
 
-    function query(string $sql, $debug = 0)
+    /**
+     * @param string|array $sql
+     * @param mixed $debug
+     * @return void
+     */
+    function query($sql, $debug = 0)
     {
+        if ($debug) echo "- original query: {$sql}";
         if (strlen($sql) == 0) {
             echo "Fatal error - query is empty !!!";
             exit;
@@ -135,7 +162,7 @@ class dw_mysql {
 
         if ($this->open()) {
             // run original query planned
-            if ($debug) echo "db open - ok<br>\n";
+            if ($debug) echo "db open success<br>\n";
             try {
                 $select = $this->connection->query($sql);
             } catch (Exception $e) {
@@ -162,11 +189,53 @@ class dw_mysql {
             }
 
             if ($debug && is_array($ret)) echo "result count  = " . count($ret) . "<br>\n";
+            
+            if ($this->normalizeToNFC == true) {
+                $ret = $this->normalizeToNFC($ret, $debug);
+            }
+
             return $ret;
         } else {
-            if ($debug) echo "return value for query execution is null - original query: {$sql}";
-            return null;
+            if ($debug) "[{$this->database}] <font color=red>query exection failure, by connection failure</font>";
+            return NULL;
         }
+    }
+
+    /**
+     * @param string|array $sql
+     * @param mixed $debug
+     * @return int|false
+     */
+    function exec_sql($sql, $debug = 0)
+    {
+        if ($debug) echo "[{$this->database}] {$sql}";
+
+        $ret = false;
+
+        if ($this->normalizeToNFC == true) {
+            $sql = $this->normalizeToNFC($sql, $debug);
+        }
+
+        $this->route_query($sql, $debug);
+
+        if ($this->open()) {
+            $pResult = $this->connection->exec($sql);
+            if ($debug) "[{$this->database}] return value of PDO::exec() - (" . gettype($pResult) . ") : ({$pResult})";
+            if ($pResult) {
+                if ($debug) "[{$this->database}] query exection ok - applied to {$pResult} rows";
+                $ret = $pResult;
+            } else {
+                if ($debug) "[{$this->database}] <font color=red>query exection ok, but applied to {$pResult} rows</font>";
+                $ret = $pResult;
+            }
+        } else {
+            if ($debug) "[{$this->database}] <font color=red>query exection failure, by connection failure</font>";
+            $ret = false;
+        }
+
+        $this->close();
+
+        return $ret;
     }
     
 }
