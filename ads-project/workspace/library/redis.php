@@ -52,14 +52,14 @@ class dw_redis
     {
         if ($this->connect() == true) {
             // return NULL if key is empty
-            if ( ! strlen($key) ) {
+            if (!strlen($key)) {
                 return NULL;
             }
 
             $resp = $this->redis->get($this->key_prefix . $key);
 
             // return NULL if response is empty
-            if ( ! strlen($resp) ) {
+            if (!strlen($resp)) {
                 return NULL;
             } else {
                 return json_decode($resp, true, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
@@ -73,7 +73,7 @@ class dw_redis
     {
         if ($this->connect() == true) {
             // return NULL if key is empty
-            if ( ! strlen($key) ) {
+            if (!strlen($key)) {
                 return NULL;
             }
 
@@ -93,12 +93,11 @@ class dw_redis
     {
         if ($this->connect() == true) {
             // return NULL if key is empty
-            if ( ! strlen($key) ) {
+            if (!strlen($key)) {
                 return NULL;
             }
 
             return $this->redis->expire($this->key_prefix . $key, $timeout);
-
         } else {
             return NULL;
         }
@@ -107,9 +106,9 @@ class dw_redis
     function delete(string $key)
     {
         if ($this->connect() == true) {
-            
+
             // return NULL if key is empty
-            if ( ! strlen($key) ) {
+            if (!strlen($key)) {
                 return;
             }
 
@@ -128,5 +127,59 @@ class dw_redis
                 $this->redis->delete($this->key_prefix . $key);
             }
         }
+    }
+
+    function get_cache(string $id, string $key, int $timeout = 300)
+    {
+        if ($this->connect() == true) {
+            $cache_key = $id . "-" . $key;
+
+            $resp = $this->get($cache_key);
+
+            if ($resp) {
+                $curr_time = time();
+                $elapsed_time = $curr_time - $resp['tickcount'];
+
+                if (($curr_time <= $resp['expire']) || ($elapsed_time <= $timeout)) {
+                    return $resp['src'];
+                }
+            } 
+        }
+
+        return NULL;
+    }
+
+    function set_cache(string $id, string $key, $val, int $timeout = 300, int $expire_timeout = 604800)
+    {
+        if ($this->connect() == true) {
+            if ( ! strlen($key) ) {
+                return false;
+            }
+
+            $resp = [
+                "src" => $val,
+                "expire" => time() + $timeout,
+                "tickcount" => time()
+            ];
+
+            /*
+                we won't use user timeout, but use 604800 secs for extended access
+                604800 = 86400*7
+            */
+            if ($timeout < $expire_timeout) $timeout = $expire_timeout;
+            $cache = $this->set($id . "-" . $key, $resp, $timeout);
+            return true;
+        }
+        
+        return false;
+    }
+
+    function delete_cache(string $id, $key = NULL)
+    {
+        if ($this->connect() == true) {
+            if (!strlen($key)) return false;
+            $this->delete($id . "-" . $key);
+            return true;
+        } else return false;
     }
 }
