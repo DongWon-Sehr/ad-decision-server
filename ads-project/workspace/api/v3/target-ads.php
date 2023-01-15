@@ -79,13 +79,12 @@ if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
 // main -------------------------------------------------------------------------------------------
 
 // set cache key
-$key_prefix = "api-v3-target-ads";
-$cache_key = "{$key_prefix}-{$gender}-{$country}";
+$cache_key = "{$gender}-{$country}";
 $m_redis = new dw_redis();
 
 // get ads list from cache
 if ( ! $ignore_cache ) {
-    $ads_list = $m_redis->get($cache_key);
+    $ads_list = $m_redis->get_cache("api-v3-target-ads", $cache_key);
 }
 
 // get ads list from db
@@ -142,9 +141,9 @@ if ($target_ads) {
     }
 }
 
-// set cache if db query exist
+// update cache if db query exist
 if ( $ads_list ) {
-    $m_redis->set($cache_key, $ads_list);
+    $m_redis->set_cache("api-v3-target-ads", $cache_key, $ads_list);
 }
 
 // response

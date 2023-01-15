@@ -56,17 +56,23 @@ if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
 // main -------------------------------------------------------------------------------------------
 
 // set cache key
-$key_prefix = "api-v3-current-reward-history";
 $target_date = date("Y-m-d", strtotime("-7 Day"));
-$cache_key = "{$key_prefix}-{$user_id}-{$target_date}";
+$cache_key = "{$user_id}-{$target_date}";
 $m_redis = new dw_redis();
 
 // check if cache data exist
 if ( ! $ignore_cache ) {
-    $cache = $m_redis->get($cache_key);
+    $cache = $m_redis->get_cache("api-v3-current-reward-history", $cache_key);
     if ($cache) {
+        $response = [
+            "response_at" => date("Y-m-d H:i:s"),
+            "from" => $target_date,
+            "to" => date("Y-m-d"),
+            "result" => $cache,
+        ];
+
         http_response_code(200);
-        exit(json_encode($cache));
+        exit(json_encode($response));
     }
 }
 
@@ -77,15 +83,17 @@ $reward_queue_info = $m_mysql->query($sql);
 
 // init response
 $response = [
+    "response_at" => date("Y-m-d H:i:s"),
     "from" => $target_date,
     "to" => date("Y-m-d"),
     "result" => [],
 ];
 
+$result = [];
 if ($reward_queue_info) {
     // set response
     foreach ($reward_queue_info as $_reward_queue) {
-        $response["result"] []= [
+        $result []= [
             "type" => $_reward_queue["type"],
             "reward" => $_reward_queue["reward"],
             "created_at" => $_reward_queue["created_at"],
@@ -94,9 +102,11 @@ if ($reward_queue_info) {
         ];
     }
 
-    // set cache
-    $m_redis->set($cache_key, $response);
+    // update cache
+    $m_redis->set_cache("api-v3-current-reward-history", $cache_key, $result);
 }
+
+$response["result"] = $result;
 
 http_response_code(200);
 exit(json_encode($response));
