@@ -25,6 +25,7 @@ RUN yum -y install mysql-server mysql pwgen supervisor bash-completion psmisc ne
 RUN echo "[mysqld]" | tee -a /etc/my.cnf
 RUN echo "log-bin=mysql-bin" | tee -a /etc/my.cnf
 RUN echo "server-id=11" | tee -a /etc/my.cnf
+RUN echo "default_time_zone='+09:00'" | tee -a /etc/my.cnf
 
 # Add files
 ADD ./my.cnf /etc/my.cnf.d/my.cnf
