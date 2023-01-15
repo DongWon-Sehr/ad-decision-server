@@ -134,7 +134,6 @@ class dw_mysql {
         $this->route_query($sql, $debug);
 
         if ($this->open()) {
-
             // run original query planned
             if ($debug) echo "db open - ok<br>\n";
             try {
@@ -163,7 +162,6 @@ class dw_mysql {
             }
 
             if ($debug && is_array($ret)) echo "result count  = " . count($ret) . "<br>\n";
-
             return $ret;
         } else {
             if ($debug) echo "return value for query execution is null - original query: {$sql}";
