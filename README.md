@@ -147,7 +147,7 @@ server-->>client: Ad response
 | weight_pctr_mixed | 3 | CTR 예측값이 가장 높은 광고를 첫 번째에 위치하고 나머지 두 광고는 weight 기반 정렬 |
 
 신규 광고 정책을 추가하는 방법은 아래와 같습니다.
-1.  광고 정책 모듈 `./workspace/library/ad_policy` 의 추상 클래스 [`AdPolicy`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/library/ad_policy/policy/ad_policy.php) 를 상속하여 새로운 광고 정책 클래스를 생성
+1.  광고 정책 모듈 [`./workspace/library/ad_policy`](https://github.com/DongWon-Sehr/ad-decision-server/tree/main/ads-project/workspace/library/ad_policy) 의 추상 클래스 [`AdPolicy`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/library/ad_policy/policy/ad_policy.php) 를 상속하여 새로운 광고 정책 클래스를 생성
 2.  광고 정책 선택자 클래스 [`AdPolicySelector`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/library/ad_policy/core/ad_policy_selector.php) 의 생성자 함수에서 정책 결정 로직 수정
 
 ### DB Replication
@@ -384,15 +384,15 @@ Redis 모듈 [`./workspace/library/redis.php`](https://github.com/DongWon-Sehr/a
 | created_at | VARCHAR |  |
 | reward_queue_id | INT | FK (user_reward_queue.id) |
 
-- 클라이언트 광고 송출 API `target-ads` 요청시 서버에서 타겟 광고 송출 정보 삽입
+- 클라이언트 광고 송출 API [`target-ads`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/api/v3/target-ads.php) 요청시 서버에서 타겟 광고 송출 정보 삽입
 - 송출 시간과 유저의 user_id 를 조합한 해시값으로 송출 id 생성. 하나의 송출 정보로 중복 적립 방지
 - 유저 리워드 적립 완료시 reward_queue_id 에 uesr_reward_queue.id 작업 큐 아아디 값을 업데이트한다.
 
 
 ### 유저 리워드 적립 API 워크플로우
-1. 클라이언트 광고 송출 API `target-ads` 요청시 서버에서 타겟 광고 송출 정보 DB 삽입 (ad_issue 테이블)
+1. 클라이언트 광고 송출 API [`target-ads`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/api/v3/target-ads.php) 요청시 서버에서 타겟 광고 송출 정보 DB 삽입 (ad_issue 테이블)
  - 송출 시간과 유저의 user_id 를 조합한 해시값으로 송출 id 생성. 하나의 송출 정보로 중복 적립 방지
-2. 클라이언트에서 유저 리워드 적립 API `user-reward-earn` 요청
+2. 클라이언트에서 유저 리워드 적립 API [`user-reward-earn`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/api/v3/user-reward-earn.php) 요청
 3. 서버에서 요청 파라미터 검증
  - 요청 파라미터 유효성 검증
  - 유저 정보 검증
