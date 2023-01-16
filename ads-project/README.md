@@ -173,7 +173,7 @@ graph TD
 ```
 ### Redis 캐시 서버
 1\. 광고 송출 API 작업 부터 고려하여 구축한 캐싱 서버로, 동일한 유저 정보의 조건으로 요청이 다시 올 경우 RDBMS 서버의 부담을 줄이고 빠른 캐싱 데이터로 응답 속도 성능을 높였습니다.
-Redis 모듈 `./workspace/library/redis.php` 을 개발할 때 고려했던 점은 캐싱을 할 때 TTL 을 설정할 수 있게 파라미터로 추가했고 개발 시 테스트와 추후 운영에 필요할 수 있는 키 삭제나 만료 메서드도 같이 개발하였습니다.
+Redis 모듈 [`./workspace/library/redis.php`](https://github.com/buzzvil-assignments/dongwon.sehr-gmail.com/blob/main/ads-project/workspace/library/redis.php) 을 개발할 때 고려했던 점은 캐싱을 할 때 TTL 을 설정할 수 있게 파라미터로 추가했고 개발 시 테스트와 추후 운영에 필요할 수 있는 키 삭제나 만료 메서드도 같이 개발하였습니다.
 
 ### 송출 ID 값 생성
 추후 리워드 적립 API 에서 한 번 송출 받은 광고로 리워드 중복 적립을 방지 하기 위해 송출 정보 ID 를 생성했습니다. 송출 ID 는 송출 시간과 유저 아이디를 조합하여 생성한 해시값 입니다.
