@@ -100,7 +100,7 @@ if ( ! $ads_list ) {
 $sql = "UPDATE ad_campaigns SET reward = {$reward} WHERE id = {$ad_id}";
 $query_result = $m_mysql->exec_sql($sql);
 
-if ( ! $query_result ) {
+if ( $query_result === NULL ) {
     $httpCode = 500;
     $response = [
         "errorCode" => $httpCode,
@@ -111,6 +111,7 @@ if ( ! $query_result ) {
 }
 
 $response = [
+    "response_at" => date("Y-m-d H:i:s"),
     "result" => [
         "ad_id" => $ad_id,
         "reward" => $reward,
