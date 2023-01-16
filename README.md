@@ -1,168 +1,816 @@
 # Overview
-본 과제의 목표는 간단한 리워드 광고 서버를 만드는 것입니다. 주어진 기획과 기본적인 아키텍처에 따라 API 설계, 데이터베이스 선택 및 데이터 스키마 정의, 애플리케이션 로직 구현 및 문서화를 수행합니다.
+본 프로젝트(ads-project) 의 목차는 다음과 같습니다.
+- [Overview](#overview)
+- [개발 일정](#개발-일정)
+- [API](#api)
+  - [1. 광고 송출 API](#1-광고-송출-api)
+  - [2. 개선된 광고 송출 API](#2-개선된-광고-송출-api)
+    - [광고 정책 추가](#광고-정책-추가)
+    - [DB Replication](#db-replication)
+    - [Redis 캐시 서버](#redis-캐시-서버)
+    - [송출 ID 값 생성](#송출-id-값-생성)
+  - [3. 광고 리워드 수정 API](#3-광고-리워드-수정-api)
+  - [4. 유저 리워드 적립 API](#4-유저-리워드-적립-api)
+    - [테이블 구조](#user-테이블)
+    - [유저 리워드 적립 API 워크플로우](#유저-리워드-적립-api-워크플로우)
+  - [5. 유저 리워드 차감 API](#5-유저-리워드-차감-api)
+  - [6. 유저 리워드 조회 API](#6-유저-리워드-조회-api)
+  - [7. 유저 리워드 최근 내역 조회 API](#7-유저-리워드-최근-내역-조회-api)
+- [도커 컨테이너](#도커-컨테이너)
+  - [MySQL 서버 초기 세팅](#mysql-서버-초기-세팅)
+  - [지원하는 API](#지원하는-api)
 
-# PART 1. 간단한 광고 서버 구현하기
-버즈빌은 리워드 광고를 위한 모바일 SDK를 제공하고 있습니다. 광고지면 보게 될 유저는 SDK를 통해서 서버에 광고 송출 요청을 보내 광고의 리스트를 반환받습니다.
+<br>
+
+# 개발 일정
+2023.01.09 ~ 2023.01.16
+
+<br>
+
+# API
+## 1. 광고 송출 API
+다음과 같이 API 구조를 설계했습니다.
+유저의 gender, country 를 기반으로 타겟 광고 후보 리스트를 조회 후, 광고의 weight 를 기반으로 최종 타겟 광고를 결정하여 응답합니다. 
+이후 동일한 유저 정보로 다시 요청이 올 경우, Redis 에 캐싱된 데이터를 조회하여 응답 속도를 개선했습니다.
 
 ```mermaid
 sequenceDiagram
 Actor client
 participant client as SDK
 participant server as ad-server
+participant redis as cache-server
+participant mysql as RDB-server
 
 client->>server: Ad allocation
-server->>databases: Select ads
-databases-->>server: List of ads
+server->>redis: Select ads @cache server
+redis->>mysql: Select ads @RDB <br>if cache not found
+mysql-->>redis: List of ads
+redis-->>server: List of ads
 server-->>client: Ad response
 ```
 
-광고 데이터는 [ad_campaigns.json](./resources/ad_campaigns.json) 파일에서 확인할 수 있습니다. 사용하실 데이터베이스에 주어진 파일을 임포트 하여 사용합니다. 파일에는 다음과 같은 정보가 담겨있습니다.
+### API Usage
+<table>
+	<tr>
+		<td> Request URL </td>
+		<td> http://localhost:8080/api/v1/target-ads </td>
+	</tr>
+	<tr>
+		<td> Method </td>
+		<td> GET </td>
+	</tr>
+	<tr>
+		<td> Parameters </td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>user_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>gender</td>
+					<td>string</td>
+					<td>mandatory</td>
+					<td>"M" or "F"</td>
+				</tr>
+				<tr>
+					<td>country</td>
+					<td>string</td>
+					<td>mandatory</td>
+					<td>2-digit country code</td>
+				</tr>
+				<tr>
+					<td>ignore_cache</td>
+					<td>int</td>
+					<td>optional</td>
+					<td>1 or 0 (default 0: use cache)</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>http://localhost:8080/api/v1/target-ads?user_id=1&gender=F&country=KR</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
 
-| Key              | Value                                                                  |
-| ---------------- | ---------------------------------------------------------------------- |
-| id               | 광고를 구분하는 고유 아이디.                                                  |
-| name             | 광고의 이름                                                               |
-| image_url        | 유저에게 보일 광고의 이미지 주소.                                              |
-| landing_url      | 광고를 클릭했을 때 최종으로 유저가 랜딩 되어야 할 광고주 페이지.                       |
-| weight           | 캠페인의 송출 가중치로 값이 클수록 첫 번째에 보일 확률이 높습니다.                     |
-| target_country   | 광고가 송출 가능한 국가 정보입니다.                                             |
-| target_gender    | 광고의 성별 타게팅 정보입니다. M: 남자 타게팅, F: 여자 타게팅                       |
-| reward           | 광고를 클릭했을 때 받을 수 있는 리워드입니다.                                     |
+```json
+[
+    {
+        "id": 181,
+        "name": "campaign name 181",
+        "image_url": "https://image.buzzvil.com/image_181.jpg",
+        "landing_url": "https://landing.buzzvil.com/landing_181",
+        "reward": 6
+    },
+    {
+        "id": 896,
+        "name": "campaign name 896",
+        "image_url": "https://image.buzzvil.com/image_896.jpg",
+        "landing_url": "https://landing.buzzvil.com/landing_896",
+        "reward": 4
+    },
+    {
+        "id": 545,
+        "name": "campaign name 545",
+        "image_url": "https://image.buzzvil.com/image_545.jpg",
+        "landing_url": "https://landing.buzzvil.com/landing_545",
+        "reward": 3
+    }
+]
+```
 
-## 과제 1
-광고 송출 API를 구현합니다. 
+</td>
+	</tr>
+</table>
 
-광고 송출 요청은 다음과 같은 정보가 포함됩니다.
+## 2. 개선된 광고 송출 API
+기본 API 구조는 1.광고 송출 API 와 동일하며 개선된 점은 다음과 같습니다.
+### 광고 정책 추가
+유저의 user_id 값을 4로 나눈 나머지(MOD) 에 따라 다음 광고 정책 중 한 가지를 선택합니다. 각 광고 정책 방식에 따라 최종 타겟 광고를 결정하여 응답합니다.
 
-- 유저의 id (Integer)
-- 유저의 성별
-- 유저의 국가
+| 광고 정책 | MOD | 설명 |
+| - | :-: | - |
+| random | 0 | 랜덤 정렬 |
+| weight | 1 | 광고 weight 기반 랜덤 정렬 |
+| pctr | 2 | CTR 예측값의 내림차순 정렬 |
+| weight_pctr_mixed | 3 | CTR 예측값이 가장 높은 광고를 첫 번째에 위치하고 나머지 두 광고는 weight 기반 정렬 |
 
-광고 송출에 대한 응답에는 다음과 같은 정보가 포함됩니다. 
+신규 광고 정책을 추가하는 방법은 아래와 같습니다.
+1.  광고 정책 모듈 `./workspace/library/ad_policy` 의 추상 클래스 [`AdPolicy`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/library/ad_policy/policy/ad_policy.php) 를 상속하여 새로운 광고 정책 클래스를 생성
+2.  광고 정책 선택자 클래스 [`AdPolicySelector`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/library/ad_policy/core/ad_policy_selector.php) 의 생성자 함수에서 정책 결정 로직 수정
 
-- 광고의 image_url
-- 광고의 landing_url
-- 광고의 reward
-
-광고 송출은 다음과 같은 조건을 만족해야 합니다.
-
-- 광고 정보의 country, gender 조건에 맞는 광고만 송출됩니다.
-- 광고는 한 번에 최대 3개까지 송출이 되며 3개의 순서는 weight 값에 의해 정해집니다. 만약 광고 a, b, c, d의 각 weight가 1, 1, 2, 3인 경우 a는 1/7, b는 1/7, c는 2/7의, d는 3/7의 확률로 처음에 위치해야 합니다. 두 번째, 세 번째 광고도 마찬가지로 weight에 의해 선택됩니다.
-
-# PART 2. 추천 로직 구현하기
-PART 1에서는 광고의 송출 순서를 weight 값에 기반하여 정하였습니다. 광고의 효율을 높이기 위해서는 유저가 관심이 있어 할 만한 광고를 먼저 보여주는 것이 좋습니다. 이를 위해 광고가 노출됐을 때 실제로 클릭할 확률인 CTR(Click-Through Rate)을 예측해주는 ctr-prediction-server를 도입했습니다. 
+### DB Replication
+트래픽이 증가할 경우를 대비해 DB 를 Master-Slave-Slave 구조로 Replication 했습니다.
+쓰기(INSERT, UPDATE) 는 Master DB, 읽기(SELECT) 는 Slave DB 로 트래픽을 분산합니다. 현재 구조로도 힘들 정도로 트래픽이 증가할 경우 Slave DB 노드를 병렬로 증가시켜 유연하게 대응할 수 있습니다.
 
 ```mermaid
-sequenceDiagram
-Actor client
-participant client as SDK
-participant server as ad-server
-
-client->>server: Ad allocation request
-server->>databases: Select ads
-databases-->>server: List of ads
-server->>ctr-prediction-server: CTR prediction request
-ctr-prediction-server-->>server: CTR prediction result
-server-->>client: Ad response
+graph TD
+    A[sdk] -->B(ad-server)
+    B -->|Write| C[Master]
+    B -->|Read| D[Slave-1]
+    B -->|Read| E[Slave-2]
 ```
+### Redis 캐시 서버
+1\. 광고 송출 API 작업 부터 고려하여 구축한 캐싱 서버로, 동일한 유저 정보의 조건으로 요청이 다시 올 경우 RDBMS 서버의 부담을 줄이고 빠른 캐싱 데이터로 응답 속도 성능을 높였습니다.
+Redis 모듈 [`./workspace/library/redis.php`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/library/redis.php) 을 개발할 때 고려했던 점은 캐싱을 할 때 TTL 을 설정할 수 있게 파라미터로 추가했고 개발 시 테스트와 추후 운영에 필요할 수 있는 키 삭제나 만료 메서드도 같이 개발하였습니다.
 
-ctr-prediction-server의 사용 방법은 다음과 같은 샘플 요청/응답을 보고 파악합니다.
+### 송출 ID 값 생성
+추후 리워드 적립 API 에서 한 번 송출 받은 광고로 리워드 중복 적립을 방지 하기 위해 송출 정보 ID 를 생성했습니다. 송출 ID 는 송출 시간과 유저 아이디를 조합하여 생성한 해시값 입니다.
+### API Usage
+<table>
+	<tr>
+		<td> Request URL </td>
+		<td> http://localhost:8080/api/v3/target-ads </td>
+	</tr>
+	<tr>
+		<td> Method </td>
+		<td> GET </td>
+	</tr>
+	<tr>
+		<td> Parameters </td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>user_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>gender</td>
+					<td>string</td>
+					<td>mandatory</td>
+					<td>"M" or "F"</td>
+				</tr>
+				<tr>
+					<td>country</td>
+					<td>string</td>
+					<td>mandatory</td>
+					<td>2-digit country code</td>
+				</tr>
+				<tr>
+					<td>ignore_cache</td>
+					<td>int</td>
+					<td>optional</td>
+					<td>1 or 0 (default 0: use cache)</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>http://localhost:8080/api/v3/target-ads?user_id=1&gender=F&country=KR</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
 
-샘플 요청
-```
-https://predict-ctr-pmj4td4sjq-du.a.run.app/?user_id=11324&ad_campaign_ids=23,44,58
-```
-
-샘플 응답
 ```json
 {
-    "pctr": [
-        0.010920662874148135,
-        0.0427661282076513,
-        0.02758501891864686
+    "response_at": "2023-01-16 18:20:27",
+    "policy": "weight",
+    "ad_issue_id": "9010f49e89c87e20c18ee7b539bfd275",
+    "target_ads": [
+        {
+            "id": 336,
+            "name": "campaign name 336",
+            "image_url": "https://image.buzzvil.com/image_336.jpg",
+            "landing_url": "https://landing.buzzvil.com/landing_336",
+            "reward": 5
+        },
+        {
+            "id": 74,
+            "name": "campaign name 74",
+            "image_url": "https://image.buzzvil.com/image_74.jpg",
+            "landing_url": "https://landing.buzzvil.com/landing_74",
+            "reward": 7
+        },
+        {
+            "id": 784,
+            "name": "campaign name 784",
+            "image_url": "https://image.buzzvil.com/image_784.jpg",
+            "landing_url": "https://landing.buzzvil.com/landing_784",
+            "reward": 6
+        }
     ]
 }
 ```
 
-CTR 기반의 광고 추천 로직을 포함하여 여러 가지 광고 순서를 정하는 정책이 존재합니다. 다음과 같은 정책들이 있습니다.
+</td>
+	</tr>
+</table>
 
-| 이름 | 설명 |
-| - | - |
-| random | 랜덤으로 정렬하는 정책 |
-| weight | PART 1에서 구현한 weight 기반의 정책 |
-| pctr | 예측된 CTR의 내림차순으로 정렬하는 정책 |
-| weight_pctr_mixed | 예측된 CTR이 가장 높은 광고를 첫 번째에 위치하고 나머지 두 광고는 weight 기반으로 정렬하는 정책 |
+## 3. 광고 리워드 수정 API
+광고 데이터의 리워드 값을 관리자의 요청으로 수정할 수 있는 API 입니다.
+파라미터 검증시 리워드 값이 음수가 될 수 없도록 조건을 확인했고 추가로 광고 리워드의 최대 제한 값을 설정하여 비정상적으로 큰 값의 요청도 예외처리를 했습니다. 캐시도 태울 필요 없는 간단한 API 지만 로컬 도커 개발 환경에서 HTTP PUT method 요청시 Redirection 되어 GET method 로 변경되는 이슈가 있어 임시로 GET 요청 파라미터를 파싱하여 처리하였습니다.
 
-## 과제 2
-위의 설명을 바탕으로 광고 송출 로직을 개선합니다. 광고 송출 시 user_id 값을 4로 나눈 나머지 값에 따라 정책을 선택합니다. 즉 유저는 4개의 그룹으로 나뉘고 각 그룹은 한 가지 정책으로만 송출됩니다.
+### API Usage
+<table>
+	<tr>
+		<td>Request URL</td>
+		<td>localhost:8080/api/v3/ad-reward</td>
+	</tr>
+	<tr>
+		<td>Method</td>
+		<td>PUT</td>
+	</tr>
+	<tr>
+		<td>Parameters</td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>ad_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>reward</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td>negative value not accepted</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>
+			<table>
+				<tr>
+					<td>Request URL</td>
+					<td>localhost:8080/api/v3/ad-reward</td>
+				</tr>
+				<tr>
+					<td>Method</td>
+					<td>PUT</td>
+				</tr>
+				<tr>
+					<td>Body</td>
+<td>
 
-## 과제 3
-다음 항목에 대한 문서를 작성합니다.
-- 새로운 광고 송출 정책을 추가하는 방법.
-- 트래픽의 증가, 데이터의 증가에 따른 성능 문제에 대응하기 위해 고려한 부분.
-
-# PART 3. 리워드 적립 기능 구현하기
-(NOTICE) 경력 1년 이하의 개발자에게 PART 3은 도전과제에 해당합니다. PART 3을 다 구현하지 못하셨더라도 PART 2까지 최선을 다해주시고 제출해주시면 됩니다.
-
-PART 3의 목표는 앞서 구현한 광고 서버에 리워드 적립 기능을 구현하는 것입니다. 유저는 광고를 볼 때 얼마의 리워드를 받을 수 있는지 알 수 있으며 광고를 클릭하면 리워드가 적립됩니다. 또한 적립한 리워드를 사용하는 것도 가능합니다.
-
-```mermaid
-sequenceDiagram
-Actor client
-participant client as SDK
-participant server as ad-server
-
-client->>server: Ad allocation request
-server->>databases: Select ads
-databases-->>server: List of ads
-server->>ctr-prediction-server: CTR prediction request
-ctr-prediction-server-->>server: CTR prediction result
-server-->>client: Ad response
-
-client->>server: Deposit reward
-server->>databases: Save reward
-databases-->>server: 
-server-->>client: Succeeded or failed
+```json
+{
+	"ad_id": 1,
+	"reward": 10
+}
 ```
 
-## 과제 4
-데이터베이스에 저장된 광고 정보의 reward 값을 수정할 수 있는 API를 구현합니다. 이 API는 광고 운영자가 집행 중인 광고의 reward 값을 변경해야 할 때 필요합니다.
+</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
 
-## 과제 5
-다음과 같은 리워드 API를 구현합니다.
+```json
+{
+    "response_at": "2023-01-16 19:13:15",
+    "result": {
+        "ad_id": 100,
+        "reward": 3
+    }
+}
+```
 
-| API 항목 | 설명 |
+</td>
+	</tr>
+</table>
+
+
+## 4. 유저 리워드 적립 API
+유저 정보의 리워드 값을 수정, 조회하는 API 이며 이를 위해 추가로 다음 테이블을 설계했습니다.
+
+### user 테이블
+
+| column | type | remark |
+| :------------ | :------------ | :------------ |
+| id  | INT | PK |
+| name | VARCHAR | |
+| gender | VARCHAR |  |
+| country | VARCHAR |  |
+| reward | INT |  |
+| created_at | VARCHAR |  |
+| updated_at | VARCHAR |  |
+
+- 유저별 리워드를 관리하기 위한 테이블
+
+### user_reward_queue 테이블
+
+| column | type | remark |
+| :------------ | :------------ | :------------ |
+| id  | INT | PK |
+| type  | VARCHAR |  |
+| user_id | VARCHAR | FK (user.id) |
+| reward | INT |  |
+| created_at | VARCHAR |  |
+| approved_at | VARCHAR |  |
+
+- 트래픽 부하 또는 내부 장애 대비 / 운영 상 이유로 유저 리워드 적립/차감 내역을 조회하기 위해 작업을 큐로 생성하여 처리
+
+### ad_issue 테이블
+
+| column | type | remark |
+| :------------ | :------------ | :------------ |
+| id  | VARCHAR | PK |
+| user_id | VARCHAR | PK<br>FK (user.id) |
+| ad_id | VARCHAR | PK<br>FK (ad_campaigns.id) |
+| reward | INT |  |
+| created_at | VARCHAR |  |
+| reward_queue_id | INT | FK (user_reward_queue.id) |
+
+- 클라이언트 광고 송출 API `target-ads` 요청시 서버에서 타겟 광고 송출 정보 삽입
+- 송출 시간과 유저의 user_id 를 조합한 해시값으로 송출 id 생성. 하나의 송출 정보로 중복 적립 방지
+- 유저 리워드 적립 완료시 reward_queue_id 에 uesr_reward_queue.id 작업 큐 아아디 값을 업데이트한다.
+
+
+### 유저 리워드 적립 API 워크플로우
+1. 클라이언트 광고 송출 API `target-ads` 요청시 서버에서 타겟 광고 송출 정보 DB 삽입 (ad_issue 테이블)
+ - 송출 시간과 유저의 user_id 를 조합한 해시값으로 송출 id 생성. 하나의 송출 정보로 중복 적립 방지
+2. 클라이언트에서 유저 리워드 적립 API `user-reward-earn` 요청
+3. 서버에서 요청 파라미터 검증
+ - 요청 파라미터 유효성 검증
+ - 유저 정보 검증
+ - 이미 적립된 광고인지 광고 송출 테이블 ad_issue 검증
+ - 적립 요청 리워드 값이 광고 송출 당시 응답한 리워드 값과 일치하는지 검증
+4. 유저 리워드 적립 큐 생성 (user_reward_queue 테이블)
+5. 광고 송출 테이블 (ad_issue.user_reward_queue_id )컬럼에 생성한 적립 큐 id 업데이트
+6. 유저 테이블 (user.reward) 컬럼에 적립 리워드 값 반영하여 업데이트
+7. 유저 리워드 적립 큐 (user_reward_queue.approved_at) 컬럼에 유저 리워드 업데이트 시간 업데이트
+8. 클라이언트에 결과 응답
+ - 응답 시간
+ - 유저 아이디
+ - 적립 반영된 리워드 값
+
+### API Usage
+<table>
+	<tr>
+		<td>Request URL</td>
+		<td>localhost:8080/api/v3/user-reward-earn</td>
+	</tr>
+	<tr>
+		<td>Method</td>
+		<td>PUT</td>
+	</tr>
+	<tr>
+		<td>Parameters</td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>user_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>ad_issue_id</td>
+					<td>string</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>ad_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>reward</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td>negative value not accepted</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>
+			<table>
+				<tr>
+					<td>Request URL</td>
+					<td>localhost:8080/api/v3/user-reward-earn</td>
+				</tr>
+				<tr>
+					<td>Method</td>
+					<td>PUT</td>
+				</tr>
+				<tr>
+					<td>Body</td>
+<td>
+
+```json
+{
+	"user_id": 1,
+	"ad_issue_id": "9010f49e89c87e20c18ee7b539bfd275 ",
+	"ad_id": 784,
+	"reward": 6
+}
+```
+
+</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
+
+```json
+{
+    "response_at": "2023-01-16 19:14:57",
+    "result": {
+        "user_id": 1,
+        "reward": 11
+    }
+}
+```
+
+</td>
+	</tr>
+</table>
+
+## 5. 유저 리워드 차감 API
+
+### API Usage
+<table>
+	<tr>
+		<td>Request URL</td>
+		<td>localhost:8080/api/v3/user-reward-use</td>
+	</tr>
+	<tr>
+		<td>Method</td>
+		<td>PUT</td>
+	</tr>
+	<tr>
+		<td>Parameters</td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>user_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>reward</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td>negative value not accepted</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>
+			<table>
+				<tr>
+					<td>Request URL</td>
+					<td>localhost:8080/api/v3/user-reward-use</td>
+				</tr>
+				<tr>
+					<td>Method</td>
+					<td>PUT</td>
+				</tr>
+				<tr>
+					<td>Body</td>
+<td>
+
+```json
+{
+	"user_id": 1,
+	"reward": 6
+}
+```
+
+</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
+
+```json
+{
+    "response_at": "2023-01-16 19:15:47",
+    "result": {
+        "user_id": 1,
+        "reward": 5
+    }
+}
+```
+
+</td>
+	</tr>
+</table>
+
+## 6. 유저 리워드 조회 API
+
+### API Usage
+<table>
+	<tr>
+		<td>Request URL</td>
+		<td>http://localhost:8080/api/v3/user-reward</td>
+	</tr>
+	<tr>
+		<td>Method</td>
+		<td>GET</td>
+	</tr>
+	<tr>
+		<td>Parameters</td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>user_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>ignore_cache</td>
+					<td>int</td>
+					<td>optional</td>
+					<td>1 or 0 (default 0: use cache)</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>http://localhost:8080/api/v3/user-reward?user_id=1</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
+
+```json
+{
+    "response_at": "2023-01-16 19:32:34",
+    "result": {
+        "user_id": 1,
+        "reward": 5
+    }
+}
+```
+
+</td>
+	</tr>
+</table>
+
+## 7. 유저 리워드 최근 내역 조회 API
+
+### API Usage
+<table>
+	<tr>
+		<td>Request URL</td>
+		<td>http://localhost:8080/api/v3/user-reward-current-history</td>
+	</tr>
+	<tr>
+		<td>Method</td>
+		<td>GET</td>
+	</tr>
+	<tr>
+		<td>Parameters</td>
+		<td>
+			<table>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Required</th>
+					<th>Remarks</th>
+				</tr>
+				<tr>
+					<td>user_id</td>
+					<td>int</td>
+					<td>mandatory</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td>ignore_cache</td>
+					<td>int</td>
+					<td>optional</td>
+					<td>1 or 0 (default 0: use cache)</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>Caller Example</td>
+		<td>http://localhost:8080/api/v3/user-reward-current-history?user_id=1</td>
+	</tr>
+	<tr>
+		<td>Response Example</td>
+<td>
+
+```json
+{
+    "response_at": "2023-01-16 19:36:54",
+    "from": "2023-01-09",
+    "to": "2023-01-16",
+    "result": [
+        {
+            "type": "use",
+            "reward": 6,
+            "created_at": "2023-01-16 19:15:47",
+            "approved_at": "2023-01-16 19:15:47",
+            "status": "approved"
+        },
+        {
+            "type": "earn",
+            "reward": 6,
+            "created_at": "2023-01-16 19:14:56",
+            "approved_at": "2023-01-16 19:14:57",
+            "status": "approved"
+        },
+        {
+            "type": "earn",
+            "reward": 5,
+            "created_at": "2023-01-16 18:36:14",
+            "approved_at": "2023-01-16 18:36:14",
+            "status": "approved"
+        }
+    ]
+}
+```
+
+</td>
+	</tr>
+</table>
+
+<br>
+
+# 도커 컨테이너
+
+## 도커 설치
+[Docker](https://www.docker.com/get-started) 설치 & 로그인 
+
+테스트 환경
+- Docker 버전 : v20.10.10
+- 로컬 환경 : macOS 12.1 w/ Intel chip
+
+## 서버 띄우기
+다음과 같이 make 커맨드를 실행합니다.
+
+```bash
+make up
+```
+
+## MySQL 서버 초기 세팅
+Master-Slave-Slave DB 서버의 Replication 작업 및 테스트에 필요한 테이블 생성, 데이터 삽입 작업을 스크립트로 개발하였습니다. <br>
+다음 순서에 맞게 실행합니다.
+
+1. 서버 띄우기
+```bash
+make up
+```
+
+<br>
+
+2. Master DB 서버 접속 
+```bash
+docker exec -it buzzvil-mysql-master /bin/bash
+```
+
+<br>
+
+3. Master DB 에서 Replication 스크립트 [`docker-entrypoint.sh`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/mysql-master/docker-entrypoint.sh) 실행
+```bash
+[root@hostname-mysql-master /]# docker-entrypoint.sh
+```
+
+<br>
+
+4. Slave-1 DB 서버 접속 
+```bash
+docker exec -it buzzvil-mysql-slave-1 /bin/bash
+```
+
+<br>
+
+5. Slave-1 DB 에서 Replication 스크립트 [`docker-entrypoint.sh`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/mysql-slave-1/docker-entrypoint.sh) 실행
+```bash
+[root@hostname-mysql-slave-1 /]# docker-entrypoint.sh
+```
+
+<br>
+
+6. Slave-2 DB 서버 접속 
+```bash
+docker exec -it buzzvil-mysql-slave-2 /bin/bash
+```
+
+<br>
+
+7. Slave-2 DB 에서 Replication 스크립트 [`docker-entrypoint.sh`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/mysql-slave-2/docker-entrypoint.sh) 실행
+```bash
+[root@hostname-mysql-slave-2 /]# docker-entrypoint.sh
+```
+
+<br>
+
+8. Master DB 에서 테스트 테이블 생성 및 데이터 삽입 스크립트 [`create_initial_tables.sh`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/mysql-master/create_initial_tables.sh) 실행
+```bash
+[root@hostname-mysql-master /]# create_initial_tables.sh
+```
+
+## 지원하는 API
+| 주소 | 설명 |
 | - | - |
-| 리워드 적립 API | 특정 유저에게 리워드를 적립합니다. |
-| 리워드 차감 API | 특정 유저의 리워드를 사용합니다. |
-| 리워드 내역 확인 API | 특정 유저의 최근 일주일의 리워드 적립/차감 내역을 보여줍니다. |
-| 리워드 잔액 확인 API | 특정 유저가 보유하고 있는 리워드의 잔액을 보여줍니다. |
-
-리워드 API는 다음과 같은 조건을 만족해야 합니다.
-- 한 번 송출받은 각각의 광고에 대해 리워드 적립은 한 번만 허용됩니다. 하지만 다시 광고 송출을 받은 경우 리워드 적립을 받을 수 있습니다.
-- 리워드 잔액은 음수가 될 수 없습니다.
-- 유저는 부정한 방법으로 리워드를 받을 수 없습니다.
-
-## 과제 6
-다음 항목에 대한 문서를 작성합니다.
-- 부정한 방법으로 리워드를 받을 수 없도록 하기 위해 고려한 부분.
-
-# 과제 가이드
-- 회사에서 실제 업무를 진행한다고 생각하고 과제를 수행해주세요.
-- 익숙한 언어, 프레임워크, 데이터베이스를 자유롭게 사용합니다. 용도에 맞게 여러 개의 데이터베이스를 사용하는 것도 가능합니다.
-- docker-compose로 구성되어야 합니다. [샘플 프로젝트](./sample-project/README.md)를 참조합니다.
-- Hexagonal architecture, clean architecture 또는 이와 유사한 아키텍처 패턴을 적용하는 것을 권장합니다.
-- API 인증에 대한 부분은 고려하지 않아도 됩니다.
-
-# 평가 기준
-- 코드의 가독성이 높고 요구사항의 변화에 유연하게 대응할 수 있습니다.
-- 테스트 커버리지를 충분히 확보합니다.
-- 필요한 문서들을 충분히 작성합니다. 문서의 엔트리 포인트는 프로젝트 루트 디렉터리의 README.md가 됩니다. 예를 들면 다음과 같은 문서들을 작성할 수 있습니다.
-    - 프로젝트를 처음 보는 사람도 쉽게 이해하고 개발에 참여할 수 있도록 돕기 위한 문서.
-    - 프로젝트를 진행하며 고민하고 의사결정 내린 부분에 대한 배경지식.
-
-# 제출 기한
-제출 기한은 일주일이며 필요한 경우 담당자와 조율할 수 있습니다.
-
-# 결과 제출
-위 내용을 구현한 프로젝트를 주어진 github main 브랜치에 반영한 뒤, 제출 완료 이메일을 버즈빌 채용 담당자에게 보냅니다.
+| http://localhost:8080/api/v0/hello | Hello Docker~! 를 출력합니다. |
+| http://localhost:8080/api/v0/mysql-version | MySQL 버전과 ad_campagins 테이블 records count 를 출력합니다. |
+| http://localhost:8080/api/v0/redis-version | Redis 버전과 ad_campagins 테이블 records count 를 출력합니다. |
+| http://localhost:8080/api/v1/target-ads | 1. [광고 송출 API (v1)](#api-usage) |
+| http://localhost:8080/api/v2/target-ads | 2. 개선된 광고 송출 API (v2) |
+| http://localhost:8080/api/v3/target-ads | 2. [개선된 광고 송출 API (v3)](#api-usage-1) |
+| http://localhost:8080/api/v3/ad-reward | 3. [광고 리워드 수정 API](#api-usage-2) |
+| http://localhost:8080/api/v3/user-reward-earn | 4. [유저 리워드 적립 API](#api-usage-3) |
+| http://localhost:8080/api/v3/user-reward-use | 5. [유저 리워드 차감 API](#api-usage-4) |
+| http://localhost:8080/api/v3/user-reward | 6. [유저 리워드 조회 API](#api-usage-5) |
+| http://localhost:8080/api/v3/user-reward-current-history | 7. [유저 리워드 최근 내역 조회 API](#api-usage-6) |
