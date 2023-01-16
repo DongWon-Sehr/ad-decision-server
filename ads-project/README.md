@@ -157,8 +157,8 @@ server-->>client: Ad response
 | weight_pctr_mixed | 3 | CTR 예측값이 가장 높은 광고를 첫 번째에 위치하고 나머지 두 광고는 weight 기반 정렬 |
 
 신규 광고 정책을 추가하는 방법은 아래와 같습니다.
-1.  광고 정책 모듈 `./workspace/library/ad_policy` 의 추상 클래스 `AdPolicy` 를 상속하여 새로운 광고 정책 클래스를 생성
-2.  광고 정책 선택자 클래스 `AdPolicySelector` 의 생성자 함수에서 정책 결정 로직 수정
+1.  광고 정책 모듈 `./workspace/library/ad_policy` 의 추상 클래스 [`AdPolicy`](https://github.com/buzzvil-assignments/dongwon.sehr-gmail.com/blob/main/ads-project/workspace/library/ad_policy/policy/ad_policy.php) 를 상속하여 새로운 광고 정책 클래스를 생성
+2.  광고 정책 선택자 클래스 [`AdPolicySelector`](https://github.com/buzzvil-assignments/dongwon.sehr-gmail.com/blob/main/ads-project/workspace/library/ad_policy/core/ad_policy_selector.php) 의 생성자 함수에서 정책 결정 로직 수정
 
 ### DB Replication
 트래픽이 증가할 경우를 대비해 DB 를 Master-Slave-Slave 구조로 Replication 했습니다.
