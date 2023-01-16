@@ -4,7 +4,7 @@ services:
 
     ### Apache-PHP Web Server Container ##################################
     web:
-        container_name: buzzvil-ads
+        container_name: ads-web
         hostname: hostname-ads
         build:
             context: ./apache2
@@ -25,7 +25,7 @@ services:
     ### Redis Container #########################################
     redis:
         image: redis:6.2.1-alpine
-        container_name: buzzvil-redis
+        container_name: ads-redis
         hostname: hostname-redis
         ports:
             - 6379:6379
@@ -35,7 +35,7 @@ services:
 
     ### MySQL Master Container #########################################
     mysql-master:
-        container_name: buzzvil-mysql-master
+        container_name: ads-mysql-master
         hostname: hostname-mysql-master
         restart: always
         build:
@@ -43,9 +43,9 @@ services:
             dockerfile: Dockerfile
             args:
                 MYSQL_ROOT_PASSWORD: root
-                MYSQL_DATABASE: buzzvil
-                MYSQL_USER: buzzvil
-                MYSQL_PASSWORD: buzzvil
+                MYSQL_DATABASE: ads
+                MYSQL_USER: ads
+                MYSQL_PASSWORD: ads
         user: root
         privileged: true
         stdin_open: true
@@ -61,7 +61,7 @@ services:
 
     ### MySQL Slave-1 Container #########################################
     mysql-slave-1:
-        container_name: buzzvil-mysql-slave-1
+        container_name: ads-mysql-slave-1
         hostname: hostname-mysql-slave-1
         restart: always
         build:
@@ -69,9 +69,9 @@ services:
             dockerfile: Dockerfile
             args:
                 MYSQL_ROOT_PASSWORD: root
-                MYSQL_DATABASE: buzzvil
-                MYSQL_USER: buzzvil
-                MYSQL_PASSWORD: buzzvil
+                MYSQL_DATABASE: ads
+                MYSQL_USER: ads
+                MYSQL_PASSWORD: ads
         user: root
         privileged: true
         stdin_open: true
@@ -89,7 +89,7 @@ services:
 
     ### MySQL Slave-2 Container #########################################
     mysql-slave-2:
-        container_name: buzzvil-mysql-slave-2
+        container_name: ads-mysql-slave-2
         hostname: hostname-mysql-slave-2
         restart: always
         build:
@@ -97,9 +97,9 @@ services:
             dockerfile: Dockerfile
             args:
                 MYSQL_ROOT_PASSWORD: root
-                MYSQL_DATABASE: buzzvil
-                MYSQL_USER: buzzvil
-                MYSQL_PASSWORD: buzzvil
+                MYSQL_DATABASE: ads
+                MYSQL_USER: ads
+                MYSQL_PASSWORD: ads
         user: root
         privileged: true
         stdin_open: true

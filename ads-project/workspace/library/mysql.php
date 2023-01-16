@@ -5,9 +5,9 @@ class dw_mysql {
     public $connection = NULL;
     public $host = 'hostname-mysql-master'; // service name from docker-compose.yml
     public $port = "3306";
-    public $user = 'buzzvil';
-    public $password = 'buzzvil';
-    public $database = "buzzvil";
+    public $user = 'ads';
+    public $password = 'ads';
+    public $database = "ads";
     public $options = NULL;
     public $normalizeToNFC = true;
     public $master = [

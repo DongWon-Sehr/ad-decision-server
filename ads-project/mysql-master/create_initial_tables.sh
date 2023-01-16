@@ -3,9 +3,9 @@
 set -e
 
 echo ""
-echo "Create a table: buzzvil.ad_campaigns"
+echo "Create a table: ads.ad_campaigns"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-CREATE TABLE buzzvil.ad_campaigns ( \
+CREATE TABLE ads.ad_campaigns ( \
 id INT(11) AUTO_INCREMENT, \
 name VARCHAR(64) NOT NULL, \
 image_url VARCHAR(128) NOT NULL, \
@@ -18,21 +18,21 @@ PRIMARY KEY(id)
 );"
 
 echo ""
-echo "Load & insert csv data into buzzvil.ad_campaigns"
+echo "Load & insert csv data into ads.ad_campaigns"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 LOAD DATA \
 INFILE '/var/lib/mysql-files/ad_campaigns.csv' \
-INTO TABLE buzzvil.ad_campaigns \
+INTO TABLE ads.ad_campaigns \
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '' \
 LINES STARTING BY '' TERMINATED BY '\r\n' \
 IGNORE 1 LINES; \
 "
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT COUNT(*) FROM buzzvil.ad_campaigns;"
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT COUNT(*) FROM ads.ad_campaigns;"
 
 echo ""
-echo "Create a table: buzzvil.user"
+echo "Create a table: ads.user"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-CREATE TABLE buzzvil.user ( \
+CREATE TABLE ads.user ( \
 id INT(11) AUTO_INCREMENT, \
 name VARCHAR(64) NOT NULL, \
 gender VARCHAR(64) NOT NULL, \
@@ -44,23 +44,23 @@ PRIMARY KEY(id) \
 );"
 
 echo ""
-echo "Insert sample users: buzzvil.user"
+echo "Insert sample users: ads.user"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
 INSERT INTO \
-buzzvil.user (name, gender, country) \
+ads.user (name, gender, country) \
 VALUES \
 ('dongwon', 'M', 'KR'), \
 ('wanna', 'F', 'US'), \
 ('join', 'M', 'HK'), \
-('buzzvil', 'F', 'JP'), \
-('team', 'M', 'TW') \
+('new', 'F', 'JP'), \
+('company', 'M', 'TW') \
 ;"
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT * FROM buzzvil.user;"
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SELECT * FROM ads.user;"
 
 echo ""
-echo "Create a table: buzzvil.user_reward_queue"
+echo "Create a table: ads.user_reward_queue"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-CREATE TABLE buzzvil.user_reward_queue ( \
+CREATE TABLE ads.user_reward_queue ( \
 id INT(11) AUTO_INCREMENT, \
 type varchar(64) NOT NULL, \
 user_id INT(11), \
@@ -72,9 +72,9 @@ CONSTRAINT FK_user_user_reward_queue FOREIGN KEY(user_id) REFERENCES user(id) ON
 );"
 
 echo ""
-echo "Create a table: buzzvil.ad_issue"
+echo "Create a table: ads.ad_issue"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e " \
-CREATE TABLE buzzvil.ad_issue ( \
+CREATE TABLE ads.ad_issue ( \
 id VARCHAR(64), \
 user_id INT(11), \
 ad_id INT(11), \
@@ -86,4 +86,4 @@ CONSTRAINT FK_user_ad_issue FOREIGN KEY(user_id) REFERENCES user(id) ON UPDATE C
 CONSTRAINT FK_ad_campaigns_ad_issue FOREIGN KEY(ad_id) REFERENCES ad_campaigns(id) ON UPDATE CASCADE,
 CONSTRAINT FK_user_reward_queue_ad_issue FOREIGN KEY(user_reward_queue_id) REFERENCES user_reward_queue(id) ON UPDATE CASCADE
 );"
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW tables FROM buzzvil;"
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW tables FROM ads;"
