@@ -344,7 +344,7 @@ Redis 모듈 [`./workspace/library/redis.php`](https://github.com/DongWon-Sehr/a
 
 
 ## 4. 유저 리워드 적립 API
-유저 정보의 리워드 값을 수정, 조회하는 API 이며 이를 위해 추가로 다음 테이블을 설계했습니다.
+유저 정보에 요청한 리워드 값을 적립하는 API 이며 리워드 적립, 차감, 조회 등 전체적인 서비스 구성을 위해 다음 테이블을 추가로 설계하여 구성했습니다.
 
 ### user 테이블
 
