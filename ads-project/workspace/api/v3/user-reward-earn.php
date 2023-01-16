@@ -9,18 +9,17 @@ require_once "library/mysql.php";
 
 /*
 	Caller Example
-	http://localhost:8080/api/v3/user-reward
+	http://localhost:8080/api/v3/user-reward-earn
 
     // set user reward
     method: PUT
     params: [
-        "type" => "use"|"earn"  mandatory
-        "reward" => 10,         mandatory
-        "user_id" => 1,         mandatory
-        "ad_issue_id" => 33,    mandatory
-        "ad_id" => 33,          mandatory
-        "ignore_cache" => 0,    optional
-        "debug" => 1,           optional
+        "user_id" => 1,             mandatory
+        "ad_issue_id" => c9010f4v,  mandatory
+        "ad_id" => 33,              mandatory
+        "reward" => 10,             mandatory
+        "ignore_cache" => 0,        optional
+        "debug" => 1,               optional
     ]
 */
 
@@ -49,28 +48,6 @@ if ( isset($debug) && in_array($debug, ["1", "true"]) ) {
 } else {
     $debug = 0;
     header("Content-Type: application/json; charset=UTF-8");
-}
-
-if ( ! isset($type) || ! in_array($type, ["use", "earn"] ) ) {
-    $httpCode = 400;
-    $response = [
-        "errorCode" => $httpCode,
-        "message" => "Invalid type",
-    ];
-    http_response_code($httpCode);
-    exit(json_encode($response));
-}
-
-if ( ! isset($reward) || ! preg_match("/^\d+$/", $reward ) ) {
-    $httpCode = 400;
-    $response = [
-        "errorCode" => $httpCode,
-        "message" => "Invalid reward",
-    ];
-    http_response_code($httpCode0);
-    exit(json_encode($reward));
-} else {
-    $reward = abs(intval($reward)); // $reward always positive
 }
 
 if ( ! isset($user_id) || ! preg_match("/^\d+$/", $user_id ) ) {
@@ -107,6 +84,22 @@ if ( ! isset($ad_id) || ! preg_match("/^\d+$/", $ad_id ) ) {
     $ad_id = intval($ad_id);
 }
 
+if ( 
+    ! isset($reward) || 
+    ! preg_match("/^(\d+)$/", $reward, $matches) || 
+    intval($matches[1]) < 0 // $reward always positive
+) {
+    $httpCode = 400;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "Invalid reward",
+    ];
+    http_response_code($httpCode0);
+    exit(json_encode($reward));
+} else {
+    $reward = intval($reward);
+}
+
 if ( isset($ignore_cache) && in_array($ignore_cache, ["1", "true"]) ) {
     $ignore_cache = 1;
 } else {
@@ -134,72 +127,57 @@ if ( ! $user_info ) {
 }
 $user = $user_info[0];
 
-// check condition via param $type
+// check ad_issue exist & user_reward_queue already pending
+$sql = "SELECT *
+          FROM ad_issue 
+         WHERE id = '{$ad_issue_id}' 
+           AND user_id = {$user_id} 
+           AND ad_id = {$ad_id}";
+$ad_issue_info = $m_mysql->query($sql, $debug);
+
+if ( ! $ad_issue_info ) {
+    $httpCode = 404;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "Not Found ad_issue",
+    ];
+    http_response_code($httpCode);
+    exit(json_encode($response));
+} else if ( $ad_issue_info[0]["user_reward_queue_id"] ) {
+    $httpCode = 400;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "The Reward is already paid or on pending",
+    ];
+    http_response_code($httpCode);
+    exit(json_encode($response));
+} else if ( $ad_issue_info[0]["reward"] !==  $reward ) {
+    $httpCode = 400;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "Invalid reward request",
+    ];
+    http_response_code($httpCode);
+    exit(json_encode($response));
+}
+
+// insert user_reward_queue
+$type = "earn";
 $created_at = date("Y-m-d H:i:s");
-if ( $type === "use") {
-    // check if user.reward update is available
-    if ( $user["reward"] - $reward < 0 ) {
-        $httpCode = 400;
-        $response = [
-            "errorCode" => $httpCode,
-            "message" => "Request reward is bigger than user reward",
-        ];
-        http_response_code($httpCode);
-        exit(json_encode($response));
-    }
+$sql = "INSERT INTO user_reward_queue 
+        (type, user_id, reward, created_at) 
+        VALUES 
+        ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
+$exec_result = $m_mysql->exec_sql($sql, $debug);
 
-    // insert user_reward_queue
-    $sql = "INSERT INTO user_reward_queue (type, user_id, reward, created_at) VALUES ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
-    $exec_result = $m_mysql->exec_sql($sql, $debug);
-
-} else if ( $type === "earn") {
-    // check ad_issue & user_reward_queue info
-    $sql = "SELECT *
-              FROM ad_issue 
-             WHERE id = '{$ad_issue_id}' 
-               AND user_id = {$user_id} 
-               AND ad_id = {$ad_id}";
-    $ad_issue_info = $m_mysql->query($sql, $debug);
-    
-    if ( ! $ad_issue_info ) {
-        $httpCode = 404;
-        $response = [
-            "errorCode" => $httpCode,
-            "message" => "Not Found ad_issue",
-        ];
-        http_response_code($httpCode);
-        exit(json_encode($response));
-    } else if ( $ad_issue_info[0]["user_reward_queue_id"] ) {
-        $httpCode = 400;
-        $response = [
-            "errorCode" => $httpCode,
-            "message" => "The Reward is already paid or on pending",
-        ];
-        http_response_code($httpCode);
-        exit(json_encode($response));
-    } else if ( $ad_issue_info[0]["reward"] !==  $reward ) {
-        $httpCode = 400;
-        $response = [
-            "errorCode" => $httpCode,
-            "message" => "Invalid reward request",
-        ];
-        http_response_code($httpCode);
-        exit(json_encode($response));
-    }
-    
-    // insert user_reward_queue
-    $sql = "INSERT INTO user_reward_queue (type, user_id, reward, created_at) VALUES ('{$type}', {$user_id}, {$reward}, '{$created_at}')";
-    $exec_result = $m_mysql->exec_sql($sql, $debug);
-
-    if ( ! $exec_result ) {
-        $httpCode = 500;
-        $response = [
-            "errorCode" => $httpCode,
-            "message" => "Internal Server Error(1)",
-        ];
-        http_response_code($httpCode);
-        exit(json_encode($response));
-    }
+if ( ! $exec_result ) {
+    $httpCode = 500;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "Internal Server Error(1)",
+    ];
+    http_response_code($httpCode);
+    exit(json_encode($response));
 }
 
 // get user_reward_queue_id just created
@@ -223,32 +201,29 @@ if ( ! $user_reward_queue_info ) {
 }
 $user_reward_queue = $user_reward_queue_info[0];
 
-if ( $type === "earn") {
-    // update ad_issue
-    $sql = "UPDATE ad_issue 
-               SET user_reward_queue_id = {$user_reward_queue["id"]}
-             WHERE id = '{$ad_issue_id}' 
-               AND user_id = {$user_id} 
-               AND ad_id = {$ad_id}";
-    $exec_result = $m_mysql->exec_sql($sql, $debug);
+// update ad_issue.user_reward_queue_id
+$sql = "UPDATE ad_issue 
+           SET user_reward_queue_id = {$user_reward_queue["id"]}
+         WHERE id = '{$ad_issue_id}' 
+           AND user_id = {$user_id} 
+           AND ad_id = {$ad_id}";
+$exec_result = $m_mysql->exec_sql($sql, $debug);
 
-    if ( ! $exec_result ) {
-        $httpCode = 500;
-        $response = [
-            "errorCode" => $httpCode,
-            "message" => "Internal Server Error(3)",
-        ];
-        http_response_code($httpCode);
-        exit(json_encode($response));
-    }
+if ( $exec_result === NULL ) {
+    $httpCode = 500;
+    $response = [
+        "errorCode" => $httpCode,
+        "message" => "Internal Server Error(3)",
+    ];
+    http_response_code($httpCode);
+    exit(json_encode($response));
 }
 
 // update user.reward
-if ($type === "use") $reward = (-1) * $reward;
 $updated_reward = $user["reward"] + $reward;
 $sql = "UPDATE user SET reward = {$updated_reward} WHERE id = {$user_id}";
 $exec_result = $m_mysql->exec_sql($sql, $debug);
-if ( ! $exec_result ) {
+if ( $exec_result === NULL ) {
     $httpCode = 500;
     $response = [
         "errorCode" => $httpCode,
@@ -262,7 +237,7 @@ if ( ! $exec_result ) {
 $approved_at = date("Y-m-d H:i:s");
 $sql = "UPDATE user_reward_queue SET approved_at = '{$approved_at}' WHERE id = {$user_reward_queue["id"]}";
 $exec_result = $m_mysql->exec_sql($sql, $debug);
-if ( ! $exec_result ) {
+if ( $exec_result === NULL ) {
     $httpCode = 500;
     $response = [
         "errorCode" => $httpCode,
@@ -295,7 +270,7 @@ $response = [
     ],
 ];
 
-// update cache
+// update user-reward cache
 $m_redis->set_cache("api-v3-user-reward", $cache_key, $user);
 
 http_response_code(200);
