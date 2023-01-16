@@ -9,7 +9,7 @@ require_once "library/mysql.php";
 
 /*
 	Caller Example
-	http://localhost:8080/api/v3/current-reward-history\
+	http://localhost:8080/api/v3/user-reward-current-history\
 		?user_id=1\         mandatory
         &ignore_cache=0     optional
         &debug=0            optional
@@ -62,7 +62,7 @@ $m_redis = new dw_redis();
 
 // check if cache data exist
 if ( ! $ignore_cache ) {
-    $cache = $m_redis->get_cache("api-v3-current-reward-history", $cache_key);
+    $cache = $m_redis->get_cache("api-v3-user-reward-current-history", $cache_key);
     if ($cache) {
         $response = [
             "response_at" => date("Y-m-d H:i:s"),
@@ -103,7 +103,7 @@ if ($user_reward_queue_info) {
     }
 
     // update cache
-    $m_redis->set_cache("api-v3-current-reward-history", $cache_key, $result);
+    $m_redis->set_cache("api-v3-user-reward-current-history", $cache_key, $result);
 }
 
 $response["result"] = $result;
