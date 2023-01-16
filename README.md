@@ -736,9 +736,10 @@ Redis 모듈 [`./workspace/library/redis.php`](https://github.com/DongWon-Sehr/a
 - 로컬 환경 : macOS 12.1 w/ Intel chip
 
 ## 서버 띄우기
-다음과 같이 make 커맨드를 실행합니다.
+다음과 같이 ./ads-project 디록토리로 이동 후 make 커맨드를 실행합니다.
 
 ```bash
+cd ./ads-project
 make up
 ```
 
