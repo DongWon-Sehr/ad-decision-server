@@ -102,9 +102,9 @@ $target_ads = $m_ad_policy_selector->get_target_ads();
 $created_at = date("Y-m-d H:i:s");
 $ad_issue_id = md5($user_id . $created_at);
 $response = [
-    "ad_issue_id" => $ad_issue_id,
     "response_at" => $created_at,
     "policy" => $m_ad_policy_selector->get_policy_title(),
+    "ad_issue_id" => $ad_issue_id,
     "target_ads" => [],
 ];
 
