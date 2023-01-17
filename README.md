@@ -1,5 +1,5 @@
 # Overview
-본 프로젝트(ads-project) 의 목차는 다음과 같습니다.
+본 프로젝트(ad-decision-server) 의 목차는 다음과 같습니다.
 - [Overview](#overview)
 - [개발 일정](#개발-일정)
 - [API](#api)
