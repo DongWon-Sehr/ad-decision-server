@@ -403,21 +403,21 @@ end
 
 ### 유저 리워드 적립 API 워크플로우
 1. 클라이언트 광고 송출 API [`target-ads`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/api/v3/target-ads.php) 요청시 서버에서 타겟 광고 송출 정보 DB 삽입 (ad_issue 테이블)
- - 송출 시간과 유저의 user_id 를 조합한 해시값으로 송출 id 생성. 하나의 송출 정보로 중복 적립 방지
+   - 송출 시간과 유저의 user_id 를 조합한 해시값으로 송출 id 생성. 하나의 송출 정보로 중복 적립 방지
 2. 클라이언트에서 유저 리워드 적립 API [`user-reward-earn`](https://github.com/DongWon-Sehr/ad-decision-server/blob/main/ads-project/workspace/api/v3/user-reward-earn.php) 요청
 3. 서버에서 요청 파라미터 검증
- - 요청 파라미터 유효성 검증
- - 유저 정보 검증
- - 이미 적립된 광고인지 광고 송출 테이블 ad_issue 검증
- - 적립 요청 리워드 값이 광고 송출 당시 응답한 리워드 값과 일치하는지 검증
+   - 요청 파라미터 유효성 검증
+   - 유저 정보 검증
+   - 이미 적립된 광고인지 광고 송출 테이블 ad_issue 검증
+   - 적립 요청 리워드 값이 광고 송출 당시 응답한 리워드 값과 일치하는지 검증
 4. 유저 리워드 적립 큐 생성 (user_reward_queue 테이블)
 5. 광고 송출 테이블 (ad_issue.user_reward_queue_id )컬럼에 생성한 적립 큐 id 업데이트
 6. 유저 테이블 (user.reward) 컬럼에 적립 리워드 값 반영하여 업데이트
 7. 유저 리워드 적립 큐 (user_reward_queue.approved_at) 컬럼에 유저 리워드 업데이트 시간 업데이트
 8. 클라이언트에 결과 응답
- - 응답 시간
- - 유저 아이디
- - 적립 반영된 리워드 값
+   - 응답 시간
+   - 유저 아이디
+   - 적립 반영된 리워드 값
 
 ### API Usage
 <table>
