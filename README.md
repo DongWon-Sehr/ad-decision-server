@@ -43,9 +43,9 @@ participant mysql as RDB-server
 
 client->>server: Ad allocation
 server->>redis: Select ads @cache server
-redis->>mysql: Select ads @RDB <br>if cache not found
-mysql-->>redis: List of ads
 redis-->>server: List of ads
+server->>mysql: Select ads @RDB <br>if cache not found
+mysql-->>server: List of ads
 server-->>client: Ad response
 ```
 
