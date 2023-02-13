@@ -121,10 +121,10 @@ class dw_redis
             if ((strpos($key, "*") == true) || ($key == "*")) {
                 $key_list = $this->redis->keys($this->key_prefix . $key);
                 if (@count($key_list)) {
-                    $this->redis->delete($key_list);
+                    $this->redis->del($key_list);
                 }
             } else {
-                $this->redis->delete($this->key_prefix . $key);
+                $this->redis->del($this->key_prefix . $key);
             }
         }
     }
