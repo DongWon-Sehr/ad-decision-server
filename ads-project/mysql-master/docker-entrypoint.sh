@@ -38,14 +38,14 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "grant all privileges on $MYSQL_DATABASE.
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select user, host FROM mysql.user;"
 
 echo ""
-echo "Create slave-1 user"
+echo "Create repl-1 user (slave-1)"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "create user 'repl-1'@'172.16.0.%' identified with mysql_native_password"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "alter user 'repl-1'@'172.16.0.%' identified by 'repl-1'"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "grant replication slave on *.* to 'repl-1'@'172.16.0.%'; FLUSH PRIVILEGES;"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select user, host FROM mysql.user;"
 
 echo ""
-echo "Create slave-2 user"
+echo "Create repl-2 user (slave-2)"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "create user 'repl-2'@'172.16.0.%' identified with mysql_native_password"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "alter user 'repl-2'@'172.16.0.%' identified by 'repl-2'"
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -S /var/lib/mysql/mysql.sock -e "grant replication slave on *.* to 'repl-2'@'172.16.0.%'; FLUSH PRIVILEGES;"
