@@ -754,7 +754,7 @@ end
 
 ```bash
 cd ./ads-project
-make up-d
+make up
 ```
 
 ## MySQL 서버 초기 세팅
