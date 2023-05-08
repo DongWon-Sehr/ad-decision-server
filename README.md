@@ -770,7 +770,7 @@ make up
 
 2. Master DB 서버 접속 
 ```bash
-docker exec -it buzzvil-mysql-master /bin/bash
+docker exec -it ads-mysql-master /bin/bash
 ```
 
 <br>
@@ -784,7 +784,7 @@ docker exec -it buzzvil-mysql-master /bin/bash
 
 4. Slave-1 DB 서버 접속 
 ```bash
-docker exec -it buzzvil-mysql-slave-1 /bin/bash
+docker exec -it ads-mysql-slave-1 /bin/bash
 ```
 
 <br>
@@ -798,7 +798,7 @@ docker exec -it buzzvil-mysql-slave-1 /bin/bash
 
 6. Slave-2 DB 서버 접속 
 ```bash
-docker exec -it buzzvil-mysql-slave-2 /bin/bash
+docker exec -it ads-mysql-slave-2 /bin/bash
 ```
 
 <br>
